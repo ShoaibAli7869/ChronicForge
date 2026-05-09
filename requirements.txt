@@ -1,0 +1,26 @@
+# ChronicForge — requirements
+# pip install -r requirements.txt
+
+# ── Core UI ───────────────────────────────────────────────────────────────────
+PySide6>=6.5.0
+tomli_w>=1.0.0
+
+# ── Game logic & AI ───────────────────────────────────────────────────────────
+sqlalchemy>=2.0.0
+groq>=0.4.0
+
+# ── Activity tracking ─────────────────────────────────────────────────────────
+psutil>=5.9.0          # process monitoring
+python-xlib>=0.33      # X11 window title detection (optional, enhances accuracy)
+
+# ── Voice ─────────────────────────────────────────────────────────────────────
+requests>=2.31.0       # Cartesia + ElevenLabs TTS API calls
+pydub>=0.25.0          # audio playback
+# sudo apt install ffmpeg   ← required by pydub
+
+# ── System tools (install via apt, not pip) ───────────────────────────────────
+# sudo apt install xdotool        ← most accurate window title detection
+# sudo apt install ffmpeg         ← required for pydub audio playback
+
+# ── Phase 5 (coming) ──────────────────────────────────────────────────────────
+# faster-whisper>=0.10.0          ← voice logging STT

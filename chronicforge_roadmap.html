@@ -1,0 +1,134 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: var(--font-mono, monospace); background: transparent; margin: 0; padding: 16px 0; color: var(--color-text-primary); }
+h2.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px 16px; }
+.card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.badge { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: var(--border-radius-md); letter-spacing: 1px; }
+.badge-fix    { background: var(--color-background-danger);  color: var(--color-text-danger); }
+.badge-impact { background: var(--color-background-success); color: var(--color-text-success); }
+.badge-future { background: var(--color-background-warning); color: var(--color-text-warning); }
+.badge-info   { background: var(--color-background-info);    color: var(--color-text-info); }
+.card-title { font-size: 13px; font-weight: 500; }
+.item { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; border-top: 0.5px solid var(--color-border-tertiary); font-size: 12px; }
+.item:first-of-type { border-top: none; margin-top: 0; }
+.dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.dot-red    { background: var(--color-text-danger); }
+.dot-green  { background: var(--color-text-success); }
+.dot-amber  { background: var(--color-text-warning); }
+.dot-blue   { background: var(--color-text-info); }
+.item-text  { color: var(--color-text-primary); line-height: 1.4; }
+.item-sub   { color: var(--color-text-secondary); font-size: 11px; display: block; margin-top: 1px; }
+.section-label { font-size: 10px; font-weight: 500; letter-spacing: 3px; color: var(--color-text-tertiary); margin: 20px 0 8px; }
+</style>
+</head>
+<body>
+<h2 class="sr-only">ChronicForge development roadmap organized by priority tier</h2>
+
+<div class="section-label">TIER 1 — FIX FIRST (bugs & broken wiring)</div>
+<div class="grid">
+  <div class="card">
+    <div class="card-header"><span class="badge badge-fix">BUG</span><span class="card-title">Broken / disconnected</span></div>
+    <div class="item"><div class="dot dot-red"></div><div class="item-text">Sprite scale slider has no effect — settings save but sprite doesn't reload<span class="item-sub">Fix: emit config_saved → sprite reads new scale on next launch or hot-reload</span></div></div>
+    <div class="item"><div class="dot dot-red"></div><div class="item-text">Class badge in sidebar stale after level-up<span class="item-sub">Fix: connect stats_updated → _update_sidebar() in window.py</span></div></div>
+    <div class="item"><div class="dot dot-red"></div><div class="item-text">Daily quests duplicate on refresh (generates new set on top of existing)<span class="item-sub">Fix: quest_system already checks date — verify session scoping</span></div></div>
+    <div class="item"><div class="dot dot-red"></div><div class="item-text">ui/widgets/quest_card.py is orphaned — never imported<span class="item-sub">Fix: delete it or integrate it</span></div></div>
+    <div class="item"><div class="dot dot-red"></div><div class="item-text">Config onboarding_done uses a file flag, not config.toml<span class="item-sub">Fix: add field to AppConfig, use TOML consistently</span></div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="badge badge-fix">WIRING</span><span class="card-title">Built but not connected</span></div>
+    <div class="item"><div class="dot dot-amber"></div><div class="item-text">KDE notifications not wired<span class="item-sub">D-Bus + notify-send on level-up, quest due, streak danger</span></div></div>
+    <div class="item"><div class="dot dot-amber"></div><div class="item-text">Activity tracker has no dashboard tab<span class="item-sub">No way to see what it's tracking — user is blind to it</span></div></div>
+    <div class="item"><div class="dot dot-amber"></div><div class="item-text">Sprite right-click "Open Chronicle" does nothing if dashboard fn is None<span class="item-sub">Fix: always pass open_dashboard_fn from main.py</span></div></div>
+    <div class="item"><div class="dot dot-amber"></div><div class="item-text">Global hotkey (Super+L or custom) to open log tab<span class="item-sub">xdotool or Python keyboard lib — log without touching the mouse</span></div></div>
+  </div>
+</div>
+
+<div class="section-label">TIER 2 — HIGH IMPACT (adds real daily value)</div>
+<div class="grid">
+  <div class="card">
+    <div class="card-header"><span class="badge badge-impact">FEATURE</span><span class="card-title">Activity tab in dashboard</span></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">Live session summary — today's time by category<span class="item-sub">Pie/bar showing productive vs entertainment vs idle</span></div></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">Current window / app being tracked<span class="item-sub">Shows user what the tracker is seeing in real time</span></div></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">Roast threshold controls<span class="item-sub">Slider: "roast me after X minutes of entertainment"</span></div></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">Block list / allow list for apps<span class="item-sub">Mark Steam as "allowed" on weekends, etc.</span></div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="badge badge-impact">FEATURE</span><span class="card-title">Progress & stats tab</span></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">7-day / 30-day XP chart (line)<span class="item-sub">Visual proof that consistency compounds</span></div></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">Stat growth over time (each stat as a line)<span class="item-sub">Watch strength grow, intellect catch up, etc.</span></div></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">Heatmap calendar (GitHub-style)<span class="item-sub">Shows streak visually — most motivating single view</span></div></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">Best day of week / time of day analysis<span class="item-sub">When are you most productive? Based on log timestamps</span></div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="badge badge-impact">FEATURE</span><span class="card-title">Voice logging (STT)</span></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">faster-whisper tiny model (~75MB, CPU)<span class="item-sub">pip install faster-whisper — runs in ~0.5s</span></div></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">Mic button in log tab<span class="item-sub">Hold to record, release to transcribe and auto-fill</span></div></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">Sprite TTS responses already wired<span class="item-sub">Cartesia already works — just need the STT input side</span></div></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">Global hotkey: speak a log entry without opening dashboard<span class="item-sub">The fastest possible logging UX</span></div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="badge badge-impact">FEATURE</span><span class="card-title">Streak & discipline mechanics</span></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">Streak freeze — earn one per 7-day streak, spend to protect a missed day<span class="item-sub">Duolingo mechanic, reduces frustration significantly</span></div></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">Grace period — midnight rollover is harsh, give 2am instead<span class="item-sub">Configurable in settings</span></div></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">Weekly summary notification (Sunday PM)<span class="item-sub">Soldier Boy's verdict on your week via D-Bus notification</span></div></div>
+    <div class="item"><div class="dot dot-green"></div><div class="item-text">Log edit / delete<span class="item-sub">Mistakes happen — need a way to fix wrong entries</span></div></div>
+  </div>
+</div>
+
+<div class="section-label">TIER 3 — HIGH POLISH (makes it feel like a real product)</div>
+<div class="grid">
+  <div class="card">
+    <div class="card-header"><span class="badge badge-info">POLISH</span><span class="card-title">Sound design</span></div>
+    <div class="item"><div class="dot dot-blue"></div><div class="item-text">Level-up chime (short, epic, medieval)<span class="item-sub">ffmpeg plays a .wav — no pydub needed for simple playback</span></div></div>
+    <div class="item"><div class="dot dot-blue"></div><div class="item-text">Quest complete bell<span class="item-sub">Different tone from level-up</span></div></div>
+    <div class="item"><div class="dot dot-blue"></div><div class="item-text">XP gain ding (subtle)<span class="item-sub">Makes every log feel rewarding</span></div></div>
+    <div class="item"><div class="dot dot-blue"></div><div class="item-text">Sprite footstep sound (very subtle, looped during walk)<span class="item-sub">Optional, toggle in settings</span></div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="badge badge-info">POLISH</span><span class="card-title">Monthly recap</span></div>
+    <div class="item"><div class="dot dot-blue"></div><div class="item-text">Soldier Boy's monthly verdict (Groq call)<span class="item-sub">Personalised review based on actual log data</span></div></div>
+    <div class="item"><div class="dot dot-blue"></div><div class="item-text">PDF export via reportlab<span class="item-sub">Character sheet + stat charts + roast highlights</span></div></div>
+    <div class="item"><div class="dot dot-blue"></div><div class="item-text">Auto-generated on 1st of each month<span class="item-sub">Scheduler already wired — just add the task</span></div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="badge badge-info">POLISH</span><span class="card-title">Data & backup</span></div>
+    <div class="item"><div class="dot dot-blue"></div><div class="item-text">Export to JSON / CSV<span class="item-sub">All log entries, all stats, full character history</span></div></div>
+    <div class="item"><div class="dot dot-blue"></div><div class="item-text">Import / restore from backup<span class="item-sub">So switching machines doesn't kill progress</span></div></div>
+    <div class="item"><div class="dot dot-blue"></div><div class="item-text">Auto-backup to ~/.local/share/chronicforge/backups/<span class="item-sub">Daily SQLite copy — silent, automatic</span></div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="badge badge-future">FUTURE</span><span class="card-title">KDE Plasma widget</span></div>
+    <div class="item"><div class="dot dot-blue"></div><div class="item-text">QML plasmoid showing live stats in panel<span class="item-sub">Reads from same SQLite file — separate .plasmoid package</span></div></div>
+    <div class="item"><div class="dot dot-blue"></div><div class="item-text">Streak counter in taskbar<span class="item-sub">Always visible — subtle motivation</span></div></div>
+    <div class="item"><div class="dot dot-blue"></div><div class="item-text">Quick log from panel widget<span class="item-sub">Type activity without opening dashboard</span></div></div>
+  </div>
+</div>
+
+<div class="section-label">RECOMMENDED BUILD ORDER</div>
+<div class="card">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:11px;">
+    <div style="border-right:0.5px solid var(--color-border-tertiary);padding-right:10px;">
+      <div style="font-weight:500;font-size:12px;margin-bottom:6px;color:var(--color-text-danger)">Sprint 1 · Fix</div>
+      <div style="color:var(--color-text-secondary);line-height:1.6">Bug fixes<br>Broken wiring<br>KDE notifications<br>Orphaned files<br>Sidebar refresh</div>
+    </div>
+    <div style="border-right:0.5px solid var(--color-border-tertiary);padding-right:10px;padding-left:10px;">
+      <div style="font-weight:500;font-size:12px;margin-bottom:6px;color:var(--color-text-success)">Sprint 2 · Track</div>
+      <div style="color:var(--color-text-secondary);line-height:1.6">Activity tab<br>Progress charts<br>Heatmap calendar<br>Log edit/delete<br>Streak freeze</div>
+    </div>
+    <div style="border-right:0.5px solid var(--color-border-tertiary);padding-right:10px;padding-left:10px;">
+      <div style="font-weight:500;font-size:12px;margin-bottom:6px;color:var(--color-text-info)">Sprint 3 · Voice</div>
+      <div style="color:var(--color-text-secondary);line-height:1.6">faster-whisper STT<br>Mic button in log<br>Global hotkey<br>Voice-first logging<br>Grace period</div>
+    </div>
+    <div style="padding-left:10px;">
+      <div style="font-weight:500;font-size:12px;margin-bottom:6px;color:var(--color-text-warning)">Sprint 4 · Ship</div>
+      <div style="color:var(--color-text-secondary);line-height:1.6">Sound effects<br>Monthly recap PDF<br>Data export/backup<br>KDE widget<br>Plasma integration</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
