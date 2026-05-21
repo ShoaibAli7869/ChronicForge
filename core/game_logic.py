@@ -300,24 +300,77 @@ ACHIEVEMENT_DEFS = [
     ("secret_class", "The Unexpected", "Unlocked a secret class."),
 ]
 
+# Maps each achievement key to XP and stat rewards granted on first unlock.
+# "stat": None  → no stat reward
+# "stat": "all" → apply stat_delta to all 7 stats
+# "stat": "dominant" → apply stat_delta to the character's highest stat
+ACHIEVEMENT_REWARDS: dict[str, dict] = {
+    "first_log":    {"xp": 50,   "stat": "discipline",  "stat_delta": 0.5},
+    "streak_3":     {"xp": 75,   "stat": "discipline",  "stat_delta": 0.5},
+    "streak_7":     {"xp": 150,  "stat": "discipline",  "stat_delta": 1.0},
+    "streak_30":    {"xp": 500,  "stat": "vitality",    "stat_delta": 2.0},
+    "streak_100":   {"xp": 2000, "stat": "discipline",  "stat_delta": 5.0},
+    "level_5":      {"xp": 100,  "stat": None,          "stat_delta": 0.0},
+    "level_10":     {"xp": 250,  "stat": None,          "stat_delta": 0.0},
+    "level_25":     {"xp": 750,  "stat": None,          "stat_delta": 0.0},
+    "level_50":     {"xp": 2000, "stat": None,          "stat_delta": 0.0},
+    "stat_50":      {"xp": 200,  "stat": "dominant",    "stat_delta": 1.0},
+    "all_stats_20": {"xp": 300,  "stat": "all",         "stat_delta": 0.5},
+    "all_stats_50": {"xp": 1000, "stat": "all",         "stat_delta": 2.0},
+    "quest_10":     {"xp": 200,  "stat": "discipline",  "stat_delta": 0.5},
+    "quest_50":     {"xp": 500,  "stat": "discipline",  "stat_delta": 1.0},
+    "gym_10":       {"xp": 150,  "stat": "strength",    "stat_delta": 1.0},
+    "read_10":      {"xp": 150,  "stat": "intellect",   "stat_delta": 1.0},
+    "night_owl":    {"xp": 50,   "stat": "vitality",    "stat_delta": 0.3},
+    "early_bird":   {"xp": 50,   "stat": "discipline",  "stat_delta": 0.5},
+    "secret_class": {"xp": 500,  "stat": "all",         "stat_delta": 1.0},
+}
 
-def check_achievements(char: Character, session) -> list[tuple[str, str]]:
-    """Returns list of (key, title) for newly unlocked achievements."""
+
+_ACHIEVEMENT_DEF_MAP: dict[str, tuple] = {d[0]: d for d in ACHIEVEMENT_DEFS}
+
+
+def check_achievements(char: Character, session) -> tuple[list[tuple[str, str]], int]:
+    """
+    Returns (new_unlocks, achievement_xp_total) where new_unlocks is a list of
+    (key, title) for newly unlocked achievements and achievement_xp_total is
+    the total XP awarded by those achievements.
+    """
     unlocked_keys = {a.key for a in char.achievements}
-    new_unlocks = []
+    new_unlocks: list[tuple[str, str]] = []
+    achievement_xp_total = 0
 
     def unlock(key: str):
-        if key not in unlocked_keys:
-            defn = next((d for d in ACHIEVEMENT_DEFS if d[0] == key), None)
-            if defn:
-                ach = Achievement(
-                    character_id=char.id,
-                    key=defn[0],
-                    title=defn[1],
-                    description=defn[2],
-                )
-                session.add(ach)
-                new_unlocks.append((defn[0], defn[1]))
+        nonlocal achievement_xp_total
+        if key in unlocked_keys:
+            return
+        defn = _ACHIEVEMENT_DEF_MAP.get(key)
+        if not defn:
+            return
+        session.add(Achievement(
+            character_id=char.id,
+            key=defn[0],
+            title=defn[1],
+            description=defn[2],
+        ))
+        new_unlocks.append((defn[0], defn[1]))
+
+        reward = ACHIEVEMENT_REWARDS.get(key, {"xp": 50, "stat": None, "stat_delta": 0.0})
+        xp_bonus = reward.get("xp", 0)
+        achievement_xp_total += xp_bonus
+        char.xp += xp_bonus
+        delta = reward.get("stat_delta", 0.0)
+        stat_target = reward.get("stat")
+        if delta > 0 and stat_target:
+            if stat_target == "all":
+                for s in STAT_KEYWORDS:
+                    setattr(char, s, round(min(200.0, getattr(char, s) + delta), 2))
+            elif stat_target == "dominant":
+                stats = char.stats_dict
+                dominant = max(stats, key=lambda s: stats[s])
+                setattr(char, dominant, round(min(200.0, getattr(char, dominant) + delta), 2))
+            elif hasattr(char, stat_target):
+                setattr(char, stat_target, round(min(200.0, getattr(char, stat_target) + delta), 2))
 
     # Level checks
     if char.level >= 5:
@@ -379,7 +432,7 @@ def check_achievements(char: Character, session) -> list[tuple[str, str]]:
     if read_entries >= 10:
         unlock("read_10")
 
-    return new_unlocks
+    return new_unlocks, achievement_xp_total
 
 
 # ── Core game actions ─────────────────────────────────────────────────────────
@@ -446,20 +499,22 @@ def log_activity(
         )
         session.add(entry)
 
-        # Level up check
+        # Level up check (initial pass, before achievement XP)
         levelled_up = False
-        levels_gained = 0
         while char.xp >= xp_for_level(char.level + 1):
             char.level += 1
-            levels_gained += 1
+            levelled_up = True
+
+        # Achievements — also awards XP/stat bonuses, may trigger further level-ups
+        new_achievements, achievement_xp = check_achievements(char, session)
+
+        while char.xp >= xp_for_level(char.level + 1):
+            char.level += 1
             levelled_up = True
 
         char.xp_to_next = xp_to_next_level(char.level)
         char.char_class = get_class(char)
         char.title = get_title(char)
-
-        # Achievements
-        new_achievements = check_achievements(char, session)
 
         session.commit()
 
@@ -475,6 +530,7 @@ def log_activity(
             "new_level": char.level if levelled_up else None,
             "new_class": char.char_class if levelled_up else None,
             "achievements": new_achievements,
+            "achievement_xp": achievement_xp,
             "total_xp": char.xp,
             "xp_to_next": char.xp_to_next,
         }
