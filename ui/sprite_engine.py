@@ -100,7 +100,7 @@ class AnimConfig:
     pingpong: bool = False
 
 
-def build_anim_map(prefix: str) -> dict:
+def build_anim_map(prefix: str) -> "dict[SpriteState, AnimConfig]":
     def a(name, fps, loop, pingpong=False):
         return AnimConfig(f"{prefix}-{name}.png", 0, fps, loop, pingpong)
     return {
@@ -269,9 +269,8 @@ class SpriteWidget(QWidget):
         self._open_dashboard_fn = open_dashboard_fn
         self._open_log_fn = open_log_fn
         self._sheets: dict[SpriteState, QPixmap] = {}
-        from config.settings import load_config as _lc
-        _cfg = _lc()
-        self._anim_map = build_anim_map(_cfg.sprite.character)
+        from config.settings import load_config
+        self._anim_map = build_anim_map(load_config().sprite.character)
 
         self._state = SpriteState.IDLE
         self._frame = 0
@@ -770,6 +769,7 @@ class SpriteWidget(QWidget):
         )
         save_config(cfg)
         self._anim_map = build_anim_map(cfg.sprite.character)
+        self._anim_timer.stop()
         self._sheets.clear()
         self._load_sheets()
         self._apply(SpriteState.IDLE)
@@ -812,25 +812,3 @@ class SpriteWidget(QWidget):
         self._vy = 0.0
         self._on_floor = True
 
-    def _play_next_test_anim(self):
-        """
-        Play the next animation in the test queue.
-        Called when current animation finishes.
-        """
-        if not hasattr(self, "_test_anim_queue") or self._test_anim_index >= len(
-            self._test_anim_queue
-        ):
-            print("[Sprite Test] Animation test complete.")
-            return
-
-        state = self._test_anim_queue[self._test_anim_index]
-        self._test_anim_index += 1
-        print(f"[Sprite Test] Playing {state.name}...")
-        self._apply(state)
-
-        # Schedule next animation based on current animation length
-        anim = self._anim_map.get(state)
-        if anim:
-            duration = (anim.frames / anim.fps) * 1000  # Convert to milliseconds
-            # Add 100ms delay between animations
-            QTimer.singleShot(int(duration + 100), self._play_next_test_anim)
