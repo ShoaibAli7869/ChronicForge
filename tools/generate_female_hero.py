@@ -206,12 +206,49 @@ def gen_run() -> None:
     save_strip(frames, 'run')
 
 
+def gen_jump() -> None:
+    """6-frame jump: crouch → push → rise → peak tuck → spread → fall entry."""
+    poses = [
+        {'body_y':  4, 'crouch': 3},
+        {'body_y':  0, 'crouch': 0},
+        {'body_y': -4, 'l_leg_raise': 3, 'r_leg_raise': 3, 'l_arm_y': -4, 'r_arm_y': -4},
+        {'body_y': -6, 'l_leg_raise': 7, 'r_leg_raise': 7, 'l_arm_y': -6, 'r_arm_y': -6},
+        {'body_y': -4, 'l_leg_raise': 5, 'r_leg_raise': 5, 'l_arm_y': -2, 'r_arm_y': -2},
+        {'body_y': -2, 'l_leg_raise': 2, 'r_leg_raise': 2},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'jump')
+
+
+def gen_fall() -> None:
+    """4-frame fall: arms spread, body tilt forward."""
+    poses = [
+        {'body_y': 0,  'l_arm_x': -3, 'r_arm_x': +3, 'l_arm_y': -2, 'r_arm_y': -2},
+        {'body_y': 0,  'l_arm_x': -5, 'r_arm_x': +5, 'l_arm_y': -4, 'r_arm_y': -4, 'body_lean': 1},
+        {'body_y': 1,  'l_arm_x': -5, 'r_arm_x': +5, 'l_arm_y': -3, 'r_arm_y': -3, 'body_lean': 2},
+        {'body_y': 2,  'l_arm_x': -4, 'r_arm_x': +4, 'l_arm_y': -2, 'r_arm_y': -2, 'body_lean': 2},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'fall')
+
+
+def gen_fall_loop() -> None:
+    """3-frame looping fall — repeating descent pose."""
+    poses = [
+        {'body_y': 0, 'l_arm_x': -4, 'r_arm_x': +4, 'l_arm_y': -3, 'r_arm_y': -3, 'body_lean': 2},
+        {'body_y': 1, 'l_arm_x': -5, 'r_arm_x': +5, 'l_arm_y': -4, 'r_arm_y': -4, 'body_lean': 2},
+        {'body_y': 0, 'l_arm_x': -4, 'r_arm_x': +4, 'l_arm_y': -3, 'r_arm_y': -3, 'body_lean': 2},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'fall_loop')
+
+
 def main():
     SPRITES.mkdir(parents=True, exist_ok=True)
     gen_design()
     gen_idle()
     gen_walk()
     gen_run()
+    gen_jump()
+    gen_fall()
+    gen_fall_loop()
 
 
 if __name__ == '__main__':
