@@ -344,6 +344,7 @@ class SpriteWidget(QWidget):
         # Event bus
         event_bus.xp_gained.connect(self._on_xp)
         event_bus.level_up.connect(self._on_level_up)
+        event_bus.stat_bonus_awarded.connect(self._on_stat_bonus)
         event_bus.roast_ready.connect(self._show_bubble)
         event_bus.sprite_remark.connect(self._on_remark)
         event_bus.quest_complete.connect(self._on_quest)
@@ -643,6 +644,14 @@ class SpriteWidget(QWidget):
         self._glow_color = QColor(100, 200, 255)
         self._glow_alpha = 255
         self._show_bubble(f"LEVEL {level}!")
+
+    def _on_stat_bonus(self, bonuses: dict) -> None:
+        if not bonuses:
+            return
+        best_stat, best_val = max(bonuses.items(), key=lambda x: x[1])
+        if best_val > 0:
+            # Delay so the level-up bubble shows first before the stat bonus replaces it
+            QTimer.singleShot(4500, lambda: self._show_bubble(f"+{best_val:.1f} {best_stat.upper()}!"))
 
     def _on_remark(self, text: str):
         """Proactive remark — sprite walks to a semi-centered position first."""

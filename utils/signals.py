@@ -11,6 +11,7 @@ class _EventBus(QObject):
     # Sprite reactions
     xp_gained = Signal(int)
     level_up = Signal(int)
+    stat_bonus_awarded = Signal(dict)  # {stat_name: delta_float} emitted when level-up grants stat bonuses
     roast_ready = Signal(str)
     quest_complete = Signal(str)
     take_damage = Signal()
