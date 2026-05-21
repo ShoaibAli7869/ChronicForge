@@ -100,32 +100,35 @@ class AnimConfig:
     pingpong: bool = False
 
 
-ANIM_MAP: dict[SpriteState, AnimConfig] = {
-    SpriteState.IDLE: AnimConfig("male_hero-idle.png", 0, 8, True),
-    SpriteState.IDLE_TURN: AnimConfig("male_hero-idle_turn.png", 0, 8, False),
-    SpriteState.WALK: AnimConfig("male_hero-walk.png", 0, 10, True),
-    SpriteState.WALK_TURN: AnimConfig("male_hero-walk_turn.png", 0, 10, False),
-    SpriteState.RUN: AnimConfig("male_hero-run.png", 0, 14, True),
-    SpriteState.RUN_TURN: AnimConfig("male_hero-run_turn.png", 0, 12, False),
-    SpriteState.RUN_TO_IDLE: AnimConfig("male_hero-run_to_idle.png", 0, 10, False),
-    SpriteState.JUMP: AnimConfig("male_hero-jump.png", 0, 10, False),
-    SpriteState.FALL: AnimConfig("male_hero-fall.png", 0, 10, False),
-    SpriteState.FALL_LOOP: AnimConfig("male_hero-fall_loop.png", 0, 8, True),
-    SpriteState.DASH: AnimConfig("male_hero-dash.png", 0, 16, False),
-    SpriteState.SLIDE: AnimConfig("male_hero-slide.png", 0, 10, False),
-    SpriteState.WALL_SLIDE: AnimConfig("male_hero-wall_slide.png", 0, 8, True),
-    SpriteState.WALL_JUMP: AnimConfig("male_hero-wall_jump.png", 0, 10, False),
-    SpriteState.LEDGE_HANG: AnimConfig("male_hero-ledge_hang.png", 0, 6, True),
-    SpriteState.LEDGE_CLIMB: AnimConfig("male_hero-ledge_climb.png", 0, 10, False),
-    SpriteState.HURT: AnimConfig("male_hero-hurt.png", 0, 10, False),
-    SpriteState.DEATH: AnimConfig("male_hero-death.png", 0, 8, False),
-    SpriteState.COMBO_1: AnimConfig("male_hero-combo_1.png", 0, 13, False),
-    SpriteState.COMBO_1_END: AnimConfig("male_hero-combo_1_end.png", 0, 11, False),
-    SpriteState.COMBO_2: AnimConfig("male_hero-combo_2.png", 0, 13, False),
-    SpriteState.COMBO_2_END: AnimConfig("male_hero-combo_2_end.png", 0, 11, False),
-    SpriteState.COMBO_3: AnimConfig("male_hero-combo_3.png", 0, 13, False),
-    SpriteState.COMBO_3_END: AnimConfig("male_hero-combo_3_end.png", 0, 11, False),
-}
+def build_anim_map(prefix: str) -> dict:
+    def a(name, fps, loop, pingpong=False):
+        return AnimConfig(f"{prefix}-{name}.png", 0, fps, loop, pingpong)
+    return {
+        SpriteState.IDLE:         a("idle",         8,  True),
+        SpriteState.IDLE_TURN:    a("idle_turn",     8,  False),
+        SpriteState.WALK:         a("walk",          10, True),
+        SpriteState.WALK_TURN:    a("walk_turn",     10, False),
+        SpriteState.RUN:          a("run",           14, True),
+        SpriteState.RUN_TURN:     a("run_turn",      12, False),
+        SpriteState.RUN_TO_IDLE:  a("run_to_idle",   10, False),
+        SpriteState.JUMP:         a("jump",          10, False),
+        SpriteState.FALL:         a("fall",          10, False),
+        SpriteState.FALL_LOOP:    a("fall_loop",     8,  True),
+        SpriteState.DASH:         a("dash",          16, False),
+        SpriteState.SLIDE:        a("slide",         10, False),
+        SpriteState.WALL_SLIDE:   a("wall_slide",    8,  True),
+        SpriteState.WALL_JUMP:    a("wall_jump",     10, False),
+        SpriteState.LEDGE_HANG:   a("ledge_hang",    6,  True),
+        SpriteState.LEDGE_CLIMB:  a("ledge_climb",   10, False),
+        SpriteState.HURT:         a("hurt",          10, False),
+        SpriteState.DEATH:        a("death",         8,  False),
+        SpriteState.COMBO_1:      a("combo_1",       13, False),
+        SpriteState.COMBO_1_END:  a("combo_1_end",   11, False),
+        SpriteState.COMBO_2:      a("combo_2",       13, False),
+        SpriteState.COMBO_2_END:  a("combo_2_end",   11, False),
+        SpriteState.COMBO_3:      a("combo_3",       13, False),
+        SpriteState.COMBO_3_END:  a("combo_3_end",   11, False),
+    }
 
 
 # ── Speech bubble ─────────────────────────────────────────────────────────────
@@ -266,6 +269,9 @@ class SpriteWidget(QWidget):
         self._open_dashboard_fn = open_dashboard_fn
         self._open_log_fn = open_log_fn
         self._sheets: dict[SpriteState, QPixmap] = {}
+        from config.settings import load_config as _lc
+        _cfg = _lc()
+        self._anim_map = build_anim_map(_cfg.sprite.character)
 
         self._state = SpriteState.IDLE
         self._frame = 0
@@ -362,7 +368,7 @@ class SpriteWidget(QWidget):
 
     def _load_sheets(self):
         ok, missing = 0, []
-        for state, cfg in ANIM_MAP.items():
+        for state, cfg in self._anim_map.items():
             path = os.path.join(self.assets_dir, cfg.file)
             if not os.path.exists(path):
                 missing.append(cfg.file)
@@ -372,7 +378,7 @@ class SpriteWidget(QWidget):
             if cfg.frames == 0:
                 cfg.frames = max(1, px.width() // FRAME_SIZE)
             ok += 1
-        print(f"[ChronicForge] Loaded {ok}/{len(ANIM_MAP)} sprite sheets.")
+        print(f"[ChronicForge] Loaded {ok}/{len(self._anim_map)} sprite sheets.")
         if missing:
             print(f"[ChronicForge] Missing sheets: {len(missing)}")
 
@@ -384,12 +390,12 @@ class SpriteWidget(QWidget):
         self._state = state
         self._frame = 0
         self._pending = then
-        cfg = ANIM_MAP[state]
+        cfg = self._anim_map[state]
         self._anim_timer.start(max(16, 1000 // cfg.fps))
         self.update()
 
     def _advance_frame(self):
-        cfg = ANIM_MAP[self._state]
+        cfg = self._anim_map[self._state]
         last = cfg.frames - 1
         self._frame += 1
         if self._frame > last:
@@ -497,7 +503,7 @@ class SpriteWidget(QWidget):
         sheet = self._sheets.get(self._state)
         if not sheet:
             return None
-        cfg = ANIM_MAP[self._state]
+        cfg = self._anim_map[self._state]
         fi = max(0, min(self._frame, cfg.frames - 1))
         frame = sheet.copy(QRect(fi * FRAME_SIZE, 0, FRAME_SIZE, FRAME_SIZE))
         frame = frame.scaled(
@@ -721,6 +727,8 @@ class SpriteWidget(QWidget):
         )
         menu.addSeparator()
         menu.addAction("📌  Snap to floor").triggered.connect(self._snap_floor)
+        menu.addAction("🎬  Test Animations").triggered.connect(self._test_animations)
+        menu.addAction("⚡  Switch Character [DEV]").triggered.connect(self._dev_toggle_character)
         menu.addSeparator()
         menu.addAction("✕  Quit ChronicForge").triggered.connect(QApplication.quit)
         menu.exec(e.globalPos())
@@ -753,3 +761,76 @@ class SpriteWidget(QWidget):
         self._vy = 0.0
         self._on_floor = True
         self.move(int(self._px), int(self._py))
+
+    def _dev_toggle_character(self):
+        from config.settings import load_config, save_config
+        cfg = load_config()
+        cfg.sprite.character = (
+            "female_hero" if cfg.sprite.character == "male_hero" else "male_hero"
+        )
+        save_config(cfg)
+        self._anim_map = build_anim_map(cfg.sprite.character)
+        self._sheets.clear()
+        self._load_sheets()
+        self._apply(SpriteState.IDLE)
+
+    def _test_animations(self):
+        """
+        Open a submenu to trigger any animation from the sprite's animation list.
+        """
+        from PySide6.QtWidgets import QMenu
+
+        anim_menu = QMenu("Select Animation", self)
+        anim_menu.setStyleSheet("""
+            QMenu { background:#0e0702; color:#e8d5a3;
+                border:1px solid #3a2208; font-family:monospace;
+                font-size:10px; padding:4px; }
+            QMenu::item { padding:6px 16px; }
+            QMenu::item:selected { background:#2a1a06; color:#f5c842; }
+            QMenu::separator { height:1px; background:#2a1808; margin:2px 8px; }
+        """)
+
+        # Add all animations from self._anim_map
+        for state in sorted(SpriteState, key=lambda s: s.name):
+            anim_menu.addAction(state.name).triggered.connect(
+                lambda checked=False, s=state: self._trigger_anim(s)
+            )
+
+        # Show the submenu
+        cursor_pos = self.mapToGlobal(self.rect().center())
+        anim_menu.exec(cursor_pos)
+
+    def _trigger_anim(self, state: SpriteState):
+        """
+        Trigger a specific animation state and play it to completion.
+        """
+        print(f"[Sprite Test] Triggering animation: {state.name}")
+        self._apply(state)
+
+        # Snap to floor to ensure animations play properly
+        self._py = self._floor_y
+        self._vy = 0.0
+        self._on_floor = True
+
+    def _play_next_test_anim(self):
+        """
+        Play the next animation in the test queue.
+        Called when current animation finishes.
+        """
+        if not hasattr(self, "_test_anim_queue") or self._test_anim_index >= len(
+            self._test_anim_queue
+        ):
+            print("[Sprite Test] Animation test complete.")
+            return
+
+        state = self._test_anim_queue[self._test_anim_index]
+        self._test_anim_index += 1
+        print(f"[Sprite Test] Playing {state.name}...")
+        self._set_state(state)
+
+        # Schedule next animation based on current animation length
+        anim = self._anim_config.get(state)
+        if anim:
+            duration = (anim.frames / anim.fps) * 1000  # Convert to milliseconds
+            # Add 100ms delay between animations
+            QTimer.singleShot(int(duration + 100), self._play_next_test_anim)

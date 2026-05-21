@@ -54,3 +54,29 @@ def test_load_config_missing_character_key_defaults(tmp_path, monkeypatch):
     from config.settings import load_config
     cfg = load_config()
     assert cfg.sprite.character == "male_hero"
+
+
+def test_build_anim_map_male_hero():
+    from ui.sprite_engine import SpriteState, build_anim_map
+    amap = build_anim_map("male_hero")
+    assert SpriteState.IDLE in amap
+    assert amap[SpriteState.IDLE].file == "male_hero-idle.png"
+    assert len(amap) == 24
+
+
+def test_build_anim_map_female_hero():
+    from ui.sprite_engine import SpriteState, build_anim_map
+    amap = build_anim_map("female_hero")
+    assert amap[SpriteState.IDLE].file == "female_hero-idle.png"
+    assert amap[SpriteState.COMBO_3].file == "female_hero-combo_3.png"
+    assert len(amap) == 24
+
+
+def test_build_anim_map_preserves_fps_and_loop():
+    from ui.sprite_engine import SpriteState, build_anim_map
+    amap = build_anim_map("male_hero")
+    assert amap[SpriteState.IDLE].fps == 8
+    assert amap[SpriteState.IDLE].loop is True
+    assert amap[SpriteState.IDLE_TURN].loop is False
+    assert amap[SpriteState.FALL_LOOP].loop is True
+    assert amap[SpriteState.DASH].fps == 16
