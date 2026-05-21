@@ -6,7 +6,7 @@ Handles: XP, levelling, stat growth, class evolution,
 """
 
 import math
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Optional
 
 from core.database import Achievement, Character, LogEntry, Roast, SessionFactory
@@ -139,6 +139,12 @@ XP_TABLE = {1: 30, 2: 75, 3: 150}
 # Stat point gain per intensity
 STAT_TABLE = {1: 0.3, 2: 0.7, 3: 1.4}
 
+# ── Level-up stat bonus constants ─────────────────────────────────────────────
+
+LEVEL_UP_BASE_BONUS = 1.5        # awarded to all stats per level gained
+LEVEL_UP_DOMINANT_EXTRA = 0.5   # extra bonus for class-dominant stat per level gained
+ALL_STATS = list(STAT_KEYWORDS)
+
 
 def detect_stat(activity: str) -> str:
     """Guess which stat an activity text maps to. Returns 'discipline' as fallback."""
@@ -187,6 +193,43 @@ SECRET_CLASSES = {
     "Discipline Demon": lambda c: c.discipline > 80,
     "Renaissance Man": lambda c: all(getattr(c, s) > 40 for s in STAT_KEYWORDS),
 }
+
+# ---------------------------------------------------------------------------
+#  CLASS PERKS — each class grants gameplay bonuses
+# ---------------------------------------------------------------------------
+
+CLASS_PERKS: dict[str, dict] = {
+    # Tier 1 (Level 5)
+    "Warrior":     {"stat_bonus": "strength", "xp_multiplier": 0.10, "desc": "Iron Resolve: +10% XP from strength"},
+    "Scholar":     {"extra_quest_slots": 1,   "desc": "Deep Study: +1 custom quest slot"},
+    "Bard":        {"extra_freeze": True,     "desc": "Silver Tongue: +1 streak freeze at milestones"},
+    "Monk":        {"journal_bonus": 15,      "desc": "Vital Essence: +15 XP on first journal entry"},
+    "Sentinel":    {"daily_quest_bonus": 5,   "desc": "Daily Drill: +5 XP per daily quest completed"},
+    "Artificer":   {"journal_goal_reduction": 25, "desc": "Spark of Genius: journal word goal -25"},
+    "Merchant":    {"stat_bonus": "wealth", "xp_multiplier": 0.10, "desc": "Golden Touch: +10% XP from wealth"},
+    # Tier 2 (Level 15)
+    "Berserker":   {"stat_bonus": "strength", "xp_multiplier": 0.25, "desc": "Battle Fury: +25% XP from strength"},
+    "Archmage":    {"extra_quest_slots": 2,   "desc": "Arcane Knowledge: +2 custom quest slots"},
+    "Enchanter":   {"freeze_recharge_days": 5, "desc": "Mass Appeal: freezes recharge every 5 days"},
+    "Paladin":     {"streak_protection": 0.50, "desc": "Divine Shield: lose only 50% of streak on break"},
+    "Warlord":     {"daily_quest_bonus": 10,  "desc": "Iron March: +10 XP per daily quest"},
+    "Runesmith":   {"journal_goal_reduction": 50, "desc": "Runic Inscription: journal word goal -50"},
+    "Magnate":     {"compound_interest": 0.02, "desc": "Compound Interest: +2% XP per 10 streak days (max +20%)"},
+    # Secret classes
+    "Phantom":     {"stat_bonus": "all", "xp_multiplier": 0.10, "extra_quest_slots": 1, "desc": "Ghost Walk: +10% XP all"},
+    "Overlord":    {"extra_quest_slots": 3, "extra_journal_xp": True, "desc": "Absolute Rule: +3 quest slots, bonus journal XP"},
+    "Night Owl":   {"journal_bonus": 10, "desc": "Nocturnal: +10 bonus journal XP"},
+    "Degenerate Scholar": {"stat_bonus": "intellect", "xp_multiplier": 0.15, "desc": "Obsessive Study: +15% intellect XP"},
+    "Gym Ghost":   {"stat_bonus": "strength", "xp_multiplier": 0.15, "desc": "Eternal Pump: +15% strength XP"},
+    "Discipline Demon": {"extra_quest_slots": 1, "daily_quest_bonus": 8, "desc": "Iron Will: +1 quest, +8 XP/daily"},
+    "Renaissance Man": {"stat_bonus": "all", "xp_multiplier": 0.08, "desc": "Polymath: +8% XP all"},
+}
+
+
+def get_class_perks(char) -> dict:
+    """Return the active perk dict for the character's current class."""
+    return CLASS_PERKS.get(char.char_class, {})
+
 
 TITLES = {
     # Streak titles
@@ -274,6 +317,39 @@ def get_title(char: Character) -> str:
         }
         return mapping.get(best_stat, "The Wanderer")
     return "The Wanderer"
+
+
+# ── Level-up stat bonus ───────────────────────────────────────────────────────
+
+
+def apply_level_up_stat_bonus(char, levels_gained: int) -> dict:
+    """
+    Award stat bonuses for each level gained.
+
+    All stats receive LEVEL_UP_BASE_BONUS * levels_gained.
+    The class-dominant stat also receives LEVEL_UP_DOMINANT_EXTRA * levels_gained.
+    Stats are capped at 200.0.
+
+    Returns a dict {stat: actual_delta} for all 7 stats.
+    Changes are applied directly to `char` — caller is responsible for committing.
+    """
+    perks = get_class_perks(char)
+    dominant = perks.get("stat_bonus")
+    if not dominant or dominant == "all":
+        stats = char.stats_dict
+        dominant = max(stats, key=lambda s: stats[s])
+
+    bonuses = {}
+    for stat in ALL_STATS:
+        old_val = getattr(char, stat)
+        delta = levels_gained * LEVEL_UP_BASE_BONUS
+        if stat == dominant:
+            delta += levels_gained * LEVEL_UP_DOMINANT_EXTRA
+        new_val = min(200.0, old_val + delta)
+        setattr(char, stat, round(new_val, 2))
+        bonuses[stat] = round(new_val - old_val, 2)
+
+    return bonuses
 
 
 # ── Achievement detection ─────────────────────────────────────────────────────
@@ -454,6 +530,10 @@ def log_activity(
             levels_gained += 1
             levelled_up = True
 
+        stat_bonuses = {}
+        if levelled_up:
+            stat_bonuses = apply_level_up_stat_bonus(char, levels_gained)
+
         char.xp_to_next = xp_to_next_level(char.level)
         char.char_class = get_class(char)
         char.title = get_title(char)
@@ -477,6 +557,7 @@ def log_activity(
             "achievements": new_achievements,
             "total_xp": char.xp,
             "xp_to_next": char.xp_to_next,
+            "stat_bonuses": stat_bonuses,
         }
 
 
