@@ -1,119 +1,111 @@
 """
-ChronicForge — Settings
-TOML config at ~/.config/chronicforge/config.toml
-All fields stored in TOML — no hidden flag files.
+ChronicForge — Configuration Model
+Loads/saves settings from ~/.local/share/chronicforge/config.toml
 """
 
 import os
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 
-import tomllib
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib  # type: ignore[no-redef]
 
-CONFIG_DIR = os.path.expanduser("~/.config/chronicforge")
-CONFIG_FILE = os.path.join(CONFIG_DIR, "config.toml")
+import tomli_w
 
-
-@dataclass
-class SpriteConfig:
-    scale: int = 3
-    enabled: bool = True
+CONFIG_DIR = os.path.expanduser("~/.local/share/chronicforge")
+CONFIG_PATH = os.path.join(CONFIG_DIR, "config.toml")
 
 
 @dataclass
 class AIConfig:
     groq_api_key: str = ""
-    groq_model: str = "llama3-70b-8192"
-    tts_provider: str = "cartesia"
-    tts_api_key: str = ""
-    roast_intensity: int = 2
-    offline_fallback: bool = True
+    groq_model: str = "llama-3.3-70b-versatile"
+    roast_intensity: int = 2  # 1=mild, 2=savage, 3=nuclear
 
 
 @dataclass
-class AppConfig:
-    sprite: SpriteConfig = field(default_factory=SpriteConfig)
+class SpriteConfig:
+    scale: int = 3
+    character: str = "male_hero"   # "male_hero" | "female_hero"
+
+
+@dataclass
+class Config:
     ai: AIConfig = field(default_factory=AIConfig)
-    onboarding_done: bool = False
-    streak_grace_hour: int = 2
-    roast_ent_threshold: int = 45
+    sprite: SpriteConfig = field(default_factory=SpriteConfig)
     sounds_enabled: bool = True
-    hotkey: str = "<ctrl>+<shift>+l"  # global log hotkey
+    hotkey: str = "<ctrl>+<shift>+l"
+    streak_grace_hour: int = 2
+    onboarding_done: bool = False
 
 
-def load_config() -> AppConfig:
-    os.makedirs(CONFIG_DIR, exist_ok=True)
-    cfg = AppConfig()
-    if not os.path.exists(CONFIG_FILE):
+def load_config() -> Config:
+    """Load config from TOML file, returning defaults if absent or unreadable."""
+    if not os.path.exists(CONFIG_PATH):
+        cfg = Config()
         save_config(cfg)
         return cfg
     try:
-        with open(CONFIG_FILE, "rb") as f:
+        with open(CONFIG_PATH, "rb") as f:
             data = tomllib.load(f)
-        for k, v in data.get("sprite", {}).items():
-            if hasattr(cfg.sprite, k):
-                setattr(cfg.sprite, k, v)
-        for k, v in data.get("ai", {}).items():
-            if hasattr(cfg.ai, k):
-                setattr(cfg.ai, k, v)
-        for k in (
-            "onboarding_done",
-            "streak_grace_hour",
-            "roast_ent_threshold",
-            "sounds_enabled",
-            "hotkey",
-        ):
-            if k in data:
-                setattr(cfg, k, data[k])
+        cfg = Config()
+        ai = data.get("ai", {})
+        cfg.ai.groq_api_key = ai.get("groq_api_key", "")
+        cfg.ai.groq_model = ai.get("groq_model", "llama-3.3-70b-versatile")
+        cfg.ai.roast_intensity = ai.get("roast_intensity", 2)
+        sprite = data.get("sprite", {})
+        cfg.sprite.scale = sprite.get("scale", 3)
+        cfg.sprite.character = sprite.get("character", "male_hero")
+        cfg.sounds_enabled = data.get("sounds_enabled", True)
+        cfg.hotkey = data.get("hotkey", "<ctrl>+<shift>+l")
+        cfg.streak_grace_hour = data.get("streak_grace_hour", 2)
+        cfg.onboarding_done = data.get("onboarding_done", False)
+        return cfg
     except Exception as e:
-        print(f"[ChronicForge] Config load error: {e} — using defaults.")
-    return cfg
+        print(f"[ChronicForge] Config load error: {e}. Using defaults.")
+        return Config()
 
 
-def save_config(cfg: AppConfig):
+def save_config(cfg: Config) -> None:
+    """Persist config to TOML file."""
     os.makedirs(CONFIG_DIR, exist_ok=True)
     data = {
-        "sprite": asdict(cfg.sprite),
-        "ai": asdict(cfg.ai),
-        "onboarding_done": cfg.onboarding_done,
-        "streak_grace_hour": cfg.streak_grace_hour,
-        "roast_ent_threshold": cfg.roast_ent_threshold,
+        "ai": {
+            "groq_api_key": cfg.ai.groq_api_key,
+            "groq_model": cfg.ai.groq_model,
+            "roast_intensity": cfg.ai.roast_intensity,
+        },
+        "sprite": {
+            "scale": cfg.sprite.scale,
+            "character": cfg.sprite.character,
+        },
         "sounds_enabled": cfg.sounds_enabled,
         "hotkey": cfg.hotkey,
+        "streak_grace_hour": cfg.streak_grace_hour,
+        "onboarding_done": cfg.onboarding_done,
     }
-    try:
-        import tomli_w
-
-        with open(CONFIG_FILE, "wb") as f:
-            tomli_w.dump(data, f)
-    except ImportError:
-        # Fallback manual writer
-        with open(CONFIG_FILE, "w") as f:
-            f.write("[sprite]\n")
-            for k, v in asdict(cfg.sprite).items():
-                f.write(f"{k} = {repr(v)}\n")
-            f.write("\n[ai]\n")
-            for k, v in asdict(cfg.ai).items():
-                f.write(f"{k} = {repr(v)}\n")
-            f.write(f"\nonboarding_done = {str(cfg.onboarding_done).lower()}\n")
-            f.write(f"streak_grace_hour = {cfg.streak_grace_hour}\n")
-            f.write(f"roast_ent_threshold = {cfg.roast_ent_threshold}\n")
+    with open(CONFIG_PATH, "wb") as f:
+        tomli_w.dump(data, f)
 
 
-def mark_onboarding_done():
-    """Mark onboarding complete in config — replaces the flag file approach."""
-    cfg = load_config()
-    cfg.onboarding_done = True
-    save_config(cfg)
-    # Also remove old flag file if it exists (migration)
-    old_flag = os.path.join(CONFIG_DIR, ".onboarding_done")
-    if os.path.exists(old_flag):
-        os.unlink(old_flag)
+# Legacy flag path (migrated to TOML in current version)
+_LEGACY_FLAG = os.path.join(os.path.expanduser("~/.config/chronicforge"), ".onboarding_done")
 
 
 def is_onboarding_done() -> bool:
-    """Check TOML first, then legacy flag file."""
-    # Legacy flag file
-    if os.path.exists(os.path.join(CONFIG_DIR, ".onboarding_done")):
-        mark_onboarding_done()  # migrate it
+    """Return True if onboarding has been completed (checks TOML then legacy flag)."""
+    if load_config().onboarding_done:
         return True
-    return load_config().onboarding_done
+    # Migrate legacy flag-file to TOML on first run after upgrade
+    if os.path.exists(_LEGACY_FLAG):
+        mark_onboarding_done()
+        return True
+    return False
+
+
+def mark_onboarding_done() -> None:
+    """Persist onboarding completion to TOML config."""
+    cfg = load_config()
+    cfg.onboarding_done = True
+    save_config(cfg)
