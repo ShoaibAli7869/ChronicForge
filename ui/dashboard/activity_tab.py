@@ -21,30 +21,30 @@ from PySide6.QtWidgets import (
 from core.activity_tracker import Category, get_tracker
 from utils.signals import event_bus
 
-C_BG = "#0d0802"
-C_SURFACE = "#110a03"
-C_RULE = "#2a1a08"
-C_RULE_GOLD = "#4a3010"
-C_GOLD = "#c8a020"
-C_GOLD_BRIGHT = "#f5c842"
-C_INK = "#d4b870"
-C_INK_DIM = "#7a5a30"
-C_INK_FAINT = "#3a2810"
-C_GREEN = "#50a030"
-C_RED = "#b03020"
-C_PURPLE = "#8060c0"
-C_BLUE = "#4080c0"
+C_BG = "#e8e0cc"
+C_SURFACE = "#ddd5b5"
+C_RULE = "#c0b488"
+C_RULE_GOLD = "#a89060"
+C_GOLD = "#c8820a"
+C_GOLD_BRIGHT = "#6b3a10"
+C_INK = "#3a2a18"
+C_INK_DIM = "#8a7050"
+C_INK_FAINT = "#a89060"
+C_GREEN = "#2a6a30"
+C_RED = "#8b1a1a"
+C_PURPLE = "#4a2860"
+C_BLUE = "#2a4a7a"
 
 # Category → display colour
 CAT_COLORS = {
-    Category.PRODUCTIVE: ("#50a030", "⚒"),
-    Category.ENTERTAINMENT: ("#b03020", "🎮"),
-    Category.BROWSER_PRO: ("#4080c0", "🔍"),
-    Category.BROWSER_ENT: ("#c04080", "📺"),
-    Category.BROWSER_OTHER: ("#7a5a30", "🌐"),
-    Category.COMMUNICATION: ("#8060c0", "💬"),
-    Category.SYSTEM: ("#3a2810", "⚙"),
-    Category.IDLE: ("#2a1a08", "·"),
+    Category.PRODUCTIVE: ("#2a6a30", "⚒"),
+    Category.ENTERTAINMENT: ("#8b1a1a", "🎮"),
+    Category.BROWSER_PRO: ("#2a4a7a", "🔍"),
+    Category.BROWSER_ENT: ("#6a2040", "📺"),
+    Category.BROWSER_OTHER: ("#8a7050", "🌐"),
+    Category.COMMUNICATION: ("#4a2860", "💬"),
+    Category.SYSTEM: ("#a89060", "⚙"),
+    Category.IDLE: ("#c0b488", "·"),
 }
 
 
@@ -130,13 +130,13 @@ class ActivityTab(QWidget):
         # Page title
         title_row = QHBoxLayout()
         title = QLabel("ACTIVITY MONITOR")
-        title.setFont(QFont("monospace", 14, QFont.Weight.Bold))
+        title.setFont(QFont("Cinzel", 13, QFont.Weight.Bold))
         title.setStyleSheet(
             f"color:{C_GOLD_BRIGHT}; background:transparent; letter-spacing:4px;"
         )
         refresh_btn = QPushButton("↻")
         refresh_btn.setFixedSize(28, 28)
-        refresh_btn.setFont(QFont("monospace", 11))
+        refresh_btn.setFont(QFont("IM Fell English", 11))
         refresh_btn.setStyleSheet(f"""
             QPushButton {{
                 background:transparent; color:{C_INK_FAINT};
@@ -161,15 +161,15 @@ class ActivityTab(QWidget):
         status_row.setSpacing(16)
 
         self._cur_app_lbl = QLabel("—")
-        self._cur_app_lbl.setFont(QFont("monospace", 12, QFont.Weight.Bold))
+        self._cur_app_lbl.setFont(QFont("Cinzel", 11, QFont.Weight.Bold))
         self._cur_app_lbl.setStyleSheet(f"color:{C_INK}; background:transparent;")
 
         self._cur_cat_lbl = QLabel("")
-        self._cur_cat_lbl.setFont(QFont("monospace", 9))
+        self._cur_cat_lbl.setFont(QFont("Share Tech Mono", 9))
         self._cur_cat_lbl.setStyleSheet(f"color:{C_INK_FAINT}; background:transparent;")
 
         self._cur_win_lbl = QLabel("")
-        self._cur_win_lbl.setFont(QFont("monospace", 8))
+        self._cur_win_lbl.setFont(QFont("Share Tech Mono", 8))
         self._cur_win_lbl.setStyleSheet(f"color:{C_INK_FAINT}; background:transparent;")
         self._cur_win_lbl.setWordWrap(True)
 
@@ -204,7 +204,7 @@ class ActivityTab(QWidget):
 
         # Stacked bar
         bar_lbl = QLabel("TIME BREAKDOWN")
-        bar_lbl.setFont(QFont("monospace", 7, QFont.Weight.Bold))
+        bar_lbl.setFont(QFont("Cinzel", 7, QFont.Weight.Bold))
         bar_lbl.setStyleSheet(
             f"color:{C_INK_FAINT}; background:transparent; letter-spacing:3px;"
         )
@@ -241,7 +241,7 @@ class ActivityTab(QWidget):
 
         thresh_row = QHBoxLayout()
         thresh_lbl = QLabel("Roast after")
-        thresh_lbl.setFont(QFont("monospace", 8))
+        thresh_lbl.setFont(QFont("Share Tech Mono", 8))
         thresh_lbl.setStyleSheet(f"color:{C_INK_DIM}; background:transparent;")
         thresh_lbl.setFixedWidth(80)
 
@@ -258,7 +258,7 @@ class ActivityTab(QWidget):
             QSlider::sub-page:horizontal {{ background:{C_RULE_GOLD}; }}
         """)
         self._thresh_val = QLabel("45 min")
-        self._thresh_val.setFont(QFont("monospace", 8))
+        self._thresh_val.setFont(QFont("Share Tech Mono", 8))
         self._thresh_val.setStyleSheet(f"color:{C_GOLD}; background:transparent;")
         self._thresh_val.setFixedWidth(50)
         self._thresh_slider.valueChanged.connect(self._on_threshold_change)
@@ -268,12 +268,11 @@ class ActivityTab(QWidget):
         thresh_row.addWidget(self._thresh_val)
         root.addLayout(thresh_row)
 
-        # Load current threshold from config
+        # Sync tracker ENT_ROAST_THRESHOLD to slider default
         try:
-            from config.settings import load_config
+            from core.activity_tracker import get_tracker
 
-            cfg = load_config()
-            self._thresh_slider.setValue(cfg.roast_ent_threshold)
+            get_tracker().ENT_ROAST_THRESHOLD = self._thresh_slider.value()
         except Exception:
             pass
 
@@ -281,7 +280,7 @@ class ActivityTab(QWidget):
 
     def _label(self, text: str) -> QLabel:
         l = QLabel(text)
-        l.setFont(QFont("monospace", 7, QFont.Weight.Bold))
+        l.setFont(QFont("Cinzel", 7, QFont.Weight.Bold))
         l.setStyleSheet(
             f"color:{C_INK_FAINT}; background:transparent; letter-spacing:4px;"
         )
@@ -296,7 +295,7 @@ class ActivityTab(QWidget):
         vl.setSpacing(2)
 
         t = QLabel(title)
-        t.setFont(QFont("monospace", 7, QFont.Weight.Bold))
+        t.setFont(QFont("Cinzel", 7, QFont.Weight.Bold))
         t.setStyleSheet(
             f"color:{C_INK_FAINT}; background:transparent; letter-spacing:2px;"
         )
@@ -313,12 +312,6 @@ class ActivityTab(QWidget):
     def _on_threshold_change(self, val: int):
         self._thresh_val.setText(f"{val} min")
         try:
-            from config.settings import load_config, save_config
-
-            cfg = load_config()
-            cfg.roast_ent_threshold = val
-            save_config(cfg)
-            # Also update running tracker
             from core.activity_tracker import get_tracker
 
             get_tracker().ENT_ROAST_THRESHOLD = val
@@ -339,13 +332,13 @@ class ActivityTab(QWidget):
         cur_win = tracker.session.last_window
 
         # Live status
-        col_info = CAT_COLORS.get(cur_cat, ("#7a5a30", "·"))
+        col_info = CAT_COLORS.get(cur_cat, ("#8a7050", "·"))
         icon = col_info[1]
         cat_name = Category.display(cur_cat)
         self._cur_app_lbl.setText(cur_app[:40] or "No active app detected")
         self._cur_cat_lbl.setText(f"{icon}  {cat_name.upper()}")
         self._cur_cat_lbl.setStyleSheet(
-            f"color:{col_info[0]}; background:transparent; font-family:monospace; font-size:9px;"
+            f"color:{col_info[0]}; background:transparent; font-family: 'Share Tech Mono', monospace; font-size:9px;"
         )
         self._cur_win_lbl.setText(cur_win[:80] if cur_win else "")
 
@@ -380,14 +373,14 @@ class ActivityTab(QWidget):
         # Stacked bar segments
         segments = []
         cat_order = [
-            (Category.PRODUCTIVE, "#50a030"),
-            (Category.BROWSER_PRO, "#4080c0"),
+            (Category.PRODUCTIVE, "#2a6a30"),
+            (Category.BROWSER_PRO, "#2a4a7a"),
             (Category.BROWSER_OTHER, "#3a5070"),
             (Category.COMMUNICATION, "#7050a0"),
-            (Category.ENTERTAINMENT, "#b03020"),
-            (Category.BROWSER_ENT, "#c04080"),
-            (Category.IDLE, "#1a1005"),
-            (Category.SYSTEM, "#1a1005"),
+            (Category.ENTERTAINMENT, "#8b1a1a"),
+            (Category.BROWSER_ENT, "#6a2040"),
+            (Category.IDLE, "#ccc4a0"),
+            (Category.SYSTEM, "#ccc4a0"),
         ]
         for cat, color in cat_order:
             sec = cats.get(cat, 0)
@@ -399,14 +392,16 @@ class ActivityTab(QWidget):
         # Category breakdown rows
         while self._cat_layout.count():
             item = self._cat_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            if item is not None:
+                w = item.widget()
+                if w is not None:
+                    w.deleteLater()
 
         sorted_cats = sorted(cats.items(), key=lambda x: x[1], reverse=True)
         for cat, sec in sorted_cats:
             if sec < 30:
                 continue  # skip noise
-            col_info = CAT_COLORS.get(cat, ("#7a5a30", "·"))
+            col_info = CAT_COLORS.get(cat, ("#8a7050", "·"))
             minutes = int(sec) // 60
             frac = sec / total_sec
 
@@ -415,11 +410,11 @@ class ActivityTab(QWidget):
 
             icon_lbl = QLabel(col_info[1])
             icon_lbl.setFixedWidth(18)
-            icon_lbl.setFont(QFont("monospace", 10))
+            icon_lbl.setFont(QFont("IM Fell English", 10))
             icon_lbl.setStyleSheet(f"color:{col_info[0]}; background:transparent;")
 
             name_lbl = QLabel(Category.display(cat).upper())
-            name_lbl.setFont(QFont("monospace", 8, QFont.Weight.Bold))
+            name_lbl.setFont(QFont("Cinzel", 8, QFont.Weight.Bold))
             name_lbl.setStyleSheet(
                 f"color:{col_info[0]}; background:transparent; letter-spacing:1px;"
             )
@@ -436,7 +431,7 @@ class ActivityTab(QWidget):
             bar_inner.setStyleSheet(f"background:{col_info[0]}; border:none;")
 
             time_lbl = QLabel(f"{minutes}m")
-            time_lbl.setFont(QFont("monospace", 8))
+            time_lbl.setFont(QFont("Share Tech Mono", 8))
             time_lbl.setStyleSheet(f"color:{col_info[0]}; background:transparent;")
             time_lbl.setFixedWidth(40)
             time_lbl.setAlignment(
@@ -444,7 +439,7 @@ class ActivityTab(QWidget):
             )
 
             pct_lbl = QLabel(f"{int(frac * 100)}%")
-            pct_lbl.setFont(QFont("monospace", 7))
+            pct_lbl.setFont(QFont("Share Tech Mono", 7))
             pct_lbl.setStyleSheet(f"color:{C_INK_FAINT}; background:transparent;")
             pct_lbl.setFixedWidth(32)
             pct_lbl.setAlignment(
