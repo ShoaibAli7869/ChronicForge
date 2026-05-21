@@ -1,8 +1,7 @@
-import importlib.util, pathlib, sys
+import importlib.util, pathlib, sys, pytest
 from PIL import Image as PILImage
-from pathlib import Path
 
-SPRITES = Path("assets/sprites")
+SPRITES = pathlib.Path("assets/sprites")
 
 def _load():
     spec = importlib.util.spec_from_file_location(
@@ -43,9 +42,6 @@ def test_draw_frame_bottom_transparent():
     # bottom 28 rows should be transparent
     pixels = [frame.getpixel((64, y)) for y in range(101, 128)]
     assert all(p[3] == 0 for p in pixels), "bottom padding has pixels"
-
-
-import pytest
 
 
 def test_design_sheet_exists():
