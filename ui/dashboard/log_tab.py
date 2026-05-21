@@ -416,6 +416,13 @@ class LogTab(QWidget):
         event_bus.xp_gained.emit(xp)
         if result.get("levelled_up"):
             event_bus.level_up.emit(result["new_level"])
+            if result.get("stat_bonuses"):
+                event_bus.stat_bonus_awarded.emit(result["stat_bonuses"])
+                top = sorted(result["stat_bonuses"].items(), key=lambda x: -x[1])[:3]
+                bonus_str = "  ".join(f"+{v:.1f} {s.upper()[:4]}" for s, v in top if v > 0)
+                if bonus_str:
+                    self._feedback.setText(f"LEVEL {result.get('new_level', '?')}!  {bonus_str}")
+                    self._feedback.setStyleSheet(f"color:{C_GREEN}; background:transparent; font-weight:bold;")
         get_roast("activity_done", "praise", stat=stat, speak=True)
         event_bus.stats_updated.emit()
         self._load_history()

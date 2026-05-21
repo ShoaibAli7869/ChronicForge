@@ -535,6 +535,8 @@ class QuestTab(QWidget):
             event_bus.quest_complete.emit(result.get("quest", ""))
             if result.get("levelled_up"):
                 event_bus.level_up.emit(result["new_level"])
+                if result.get("stat_bonuses"):
+                    event_bus.stat_bonus_awarded.emit(result["stat_bonuses"])
             event_bus.quests_updated.emit()
             event_bus.stats_updated.emit()
             QTimer.singleShot(150, self.refresh)
