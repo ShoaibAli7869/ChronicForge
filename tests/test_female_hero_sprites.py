@@ -23,3 +23,19 @@ def test_make_strip_width():
     frames = [mod.new_frame() for _ in range(5)]
     strip = mod.make_strip(frames)
     assert strip.size == (640, 128)
+
+def test_draw_frame_has_pixels():
+    mod = _load()
+    frame = mod.draw_frame({})
+    assert frame.size == (128, 128)
+    assert frame.mode == 'RGBA'
+    # character must have non-transparent pixels in torso area
+    pixels = [frame.getpixel((x, 40)) for x in range(56, 73)]
+    assert any(p[3] > 0 for p in pixels), "torso row is fully transparent"
+
+def test_draw_frame_bottom_transparent():
+    mod = _load()
+    frame = mod.draw_frame({})
+    # bottom 28 rows should be transparent
+    pixels = [frame.getpixel((64, y)) for y in range(101, 128)]
+    assert all(p[3] == 0 for p in pixels), "bottom padding has pixels"
