@@ -68,6 +68,7 @@ class Character(Base):
     longest_streak: Mapped[int] = mapped_column(Integer, default=0)
     last_active_date: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     streak_freezes: Mapped[int] = mapped_column(Integer, default=0)
+    last_login_date: Mapped[Optional[str]] = mapped_column(String(10), nullable=True, default=None)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
@@ -210,3 +211,18 @@ def init_db():
 _engine = get_engine()
 Base.metadata.create_all(_engine)
 SessionFactory = sessionmaker(bind=_engine)
+
+
+def _migrate_add_last_login(engine) -> None:
+    """Safe migration: adds last_login_date column if it doesn't exist."""
+    from sqlalchemy import text
+
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE character ADD COLUMN last_login_date VARCHAR(10)"))
+            conn.commit()
+        except Exception:
+            pass  # Column already exists, that's fine
+
+
+_migrate_add_last_login(_engine)

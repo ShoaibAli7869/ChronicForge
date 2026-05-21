@@ -540,3 +540,34 @@ def set_character_name(name: str, hero_name: Optional[str] = None):
         if char:
             char.name = name
             session.commit()
+
+
+def check_daily_login_bonus() -> dict:
+    """Award +25 XP and +0.2 to weakest stat on first app open each day."""
+    today = date.today().isoformat()
+
+    with SessionFactory() as session:
+        char = session.get(Character, 1)
+        if char is None:
+            return {"awarded": False}
+        if char.last_login_date == today:
+            return {"awarded": False}
+
+        # Find weakest stat
+        stats = char.stats_dict
+        weakest_stat = min(stats, key=lambda s: stats[s])
+
+        # Award bonus
+        char.xp += 25
+        old_val = getattr(char, weakest_stat)
+        new_val = round(min(200.0, old_val + 0.2), 2)
+        setattr(char, weakest_stat, new_val)
+        char.last_login_date = today
+
+        session.commit()
+        return {
+            "awarded": True,
+            "xp": 25,
+            "stat": weakest_stat,
+            "stat_delta": round(new_val - old_val, 2),
+        }
