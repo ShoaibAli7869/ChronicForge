@@ -1,4 +1,8 @@
 import importlib.util, pathlib, sys
+from PIL import Image as PILImage
+from pathlib import Path
+
+SPRITES = Path("assets/sprites")
 
 def _load():
     spec = importlib.util.spec_from_file_location(
@@ -39,3 +43,11 @@ def test_draw_frame_bottom_transparent():
     # bottom 28 rows should be transparent
     pixels = [frame.getpixel((64, y)) for y in range(101, 128)]
     assert all(p[3] == 0 for p in pixels), "bottom padding has pixels"
+
+
+def test_design_sheet_exists():
+    path = SPRITES / "female_hero-design.png"
+    assert path.exists(), "female_hero-design.png not found"
+    img = PILImage.open(path)
+    assert img.size == (128, 128), f"expected 128x128, got {img.size}"
+    assert img.mode == 'RGBA'

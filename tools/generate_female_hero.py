@@ -146,3 +146,17 @@ def draw_frame(pose: dict = None) -> Image.Image:
         img = img.transpose(Image.FLIP_LEFT_RIGHT)
 
     return img
+
+
+def gen_design() -> None:
+    """Reference sheet — neutral front-facing pose."""
+    save_strip([draw_frame({})], 'design')
+
+
+def main():
+    SPRITES.mkdir(parents=True, exist_ok=True)
+    gen_design()
+
+
+if __name__ == '__main__':
+    main()
