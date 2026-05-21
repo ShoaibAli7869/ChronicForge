@@ -37,6 +37,7 @@ class Config:
     sounds_enabled: bool = True
     hotkey: str = "<ctrl>+<shift>+l"
     streak_grace_hour: int = 2
+    roast_ent_threshold: int = 45
     onboarding_done: bool = False
 
 
@@ -60,6 +61,7 @@ def load_config() -> Config:
         cfg.sounds_enabled = data.get("sounds_enabled", True)
         cfg.hotkey = data.get("hotkey", "<ctrl>+<shift>+l")
         cfg.streak_grace_hour = data.get("streak_grace_hour", 2)
+        cfg.roast_ent_threshold = data.get("roast_ent_threshold", 45)
         cfg.onboarding_done = data.get("onboarding_done", False)
         return cfg
     except Exception as e:
@@ -83,6 +85,7 @@ def save_config(cfg: Config) -> None:
         "sounds_enabled": cfg.sounds_enabled,
         "hotkey": cfg.hotkey,
         "streak_grace_hour": cfg.streak_grace_hour,
+        "roast_ent_threshold": cfg.roast_ent_threshold,
         "onboarding_done": cfg.onboarding_done,
     }
     with open(CONFIG_PATH, "wb") as f:

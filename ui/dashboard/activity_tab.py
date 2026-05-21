@@ -268,11 +268,15 @@ class ActivityTab(QWidget):
         thresh_row.addWidget(self._thresh_val)
         root.addLayout(thresh_row)
 
-        # Sync tracker ENT_ROAST_THRESHOLD to slider default
+        # Load persisted threshold from config
         try:
+            from config.settings import load_config
+
+            cfg = load_config()
+            self._thresh_slider.setValue(cfg.roast_ent_threshold)
             from core.activity_tracker import get_tracker
 
-            get_tracker().ENT_ROAST_THRESHOLD = self._thresh_slider.value()
+            get_tracker().ENT_ROAST_THRESHOLD = cfg.roast_ent_threshold
         except Exception:
             pass
 
@@ -312,6 +316,11 @@ class ActivityTab(QWidget):
     def _on_threshold_change(self, val: int):
         self._thresh_val.setText(f"{val} min")
         try:
+            from config.settings import load_config, save_config
+
+            cfg = load_config()
+            cfg.roast_ent_threshold = val
+            save_config(cfg)
             from core.activity_tracker import get_tracker
 
             get_tracker().ENT_ROAST_THRESHOLD = val

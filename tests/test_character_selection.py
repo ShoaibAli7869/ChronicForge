@@ -80,3 +80,20 @@ def test_build_anim_map_preserves_fps_and_loop():
     assert amap[SpriteState.IDLE_TURN].loop is False
     assert amap[SpriteState.FALL_LOOP].loop is True
     assert amap[SpriteState.DASH].fps == 16
+
+
+def test_config_roast_ent_threshold_default():
+    from config.settings import Config
+    cfg = Config()
+    assert cfg.roast_ent_threshold == 45
+
+
+def test_save_load_roast_ent_threshold(tmp_path, monkeypatch):
+    monkeypatch.setattr("config.settings.CONFIG_PATH", str(tmp_path / "config.toml"))
+    monkeypatch.setattr("config.settings.CONFIG_DIR", str(tmp_path))
+    from config.settings import Config, load_config, save_config
+    cfg = Config()
+    cfg.roast_ent_threshold = 60
+    save_config(cfg)
+    loaded = load_config()
+    assert loaded.roast_ent_threshold == 60
