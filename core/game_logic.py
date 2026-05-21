@@ -145,6 +145,15 @@ LEVEL_UP_BASE_BONUS = 1.5        # awarded to all stats per level gained
 LEVEL_UP_DOMINANT_EXTRA = 0.5   # extra bonus for class-dominant stat per level gained
 ALL_STATS = list(STAT_KEYWORDS)
 
+# Streak milestone stat bonuses
+STREAK_STAT_BONUSES: dict[int, dict] = {
+    7:   {"discipline": 1.0, "vitality": 0.5},
+    14:  {"discipline": 1.5, "vitality": 0.5},
+    30:  {"discipline": 2.0, "vitality": 1.0, "_all_other": 0.5},
+    60:  {"discipline": 3.0, "vitality": 1.5, "_all_other": 1.0},
+    100: {"discipline": 5.0, "vitality": 2.0, "_all_other": 2.0},
+}
+
 
 def detect_stat(activity: str) -> str:
     """Guess which stat an activity text maps to. Returns 'discipline' as fallback."""
@@ -511,6 +520,52 @@ def check_achievements(char: Character, session) -> tuple[list[tuple[str, str]],
     return new_unlocks, achievement_xp_total
 
 
+# ── Streak milestone bonuses ──────────────────────────────────────────────────
+
+
+def apply_streak_milestone_bonus(char) -> dict:
+    """Award stat bonuses at streak milestones. Returns {stat: delta} or {} if no milestone."""
+    streak = getattr(char, "current_streak", 0) or 0
+    if streak not in STREAK_STAT_BONUSES:
+        return {}
+    bonuses = STREAK_STAT_BONUSES[streak]
+    result = {}
+    all_other_delta = bonuses.get("_all_other", 0.0)
+    named_stats = {k: v for k, v in bonuses.items() if not k.startswith("_")}
+    for stat in _ALL_STAT_NAMES:
+        delta = named_stats.get(stat, all_other_delta)
+        if delta > 0:
+            old_val = getattr(char, stat, 10.0)
+            new_val = round(min(200.0, old_val + delta), 2)
+            setattr(char, stat, new_val)
+            result[stat] = round(new_val - old_val, 2)
+    return result
+
+
+# ── Stat neglect detection ────────────────────────────────────────────────────
+
+
+def check_neglected_stats(days: int = 7) -> list[str]:
+    """Return list of stat names not logged in the last N days."""
+    from datetime import date, timedelta
+
+    from sqlalchemy import select
+
+    cutoff = (date.today() - timedelta(days=days)).isoformat()
+
+    with SessionFactory() as session:
+        recent_stats = set(
+            session.scalars(
+                select(LogEntry.category)
+                .where(LogEntry.character_id == 1)
+                .where(LogEntry.date >= cutoff)
+                .distinct()
+            ).all()
+        )
+
+    return [s for s in _ALL_STAT_NAMES if s not in recent_stats]
+
+
 # ── Core game actions ─────────────────────────────────────────────────────────
 
 
@@ -561,6 +616,7 @@ def log_activity(
         char.longest_streak = max(char.longest_streak, char.current_streak)
         # Award streak freeze at milestones
         award_freeze_if_earned(char)
+        milestone_bonuses = apply_streak_milestone_bonus(char)
 
         # Log entry
         entry = LogEntry(
@@ -614,6 +670,7 @@ def log_activity(
             "total_xp": char.xp,
             "xp_to_next": char.xp_to_next,
             "stat_bonuses": stat_bonuses,
+            "milestone_bonuses": milestone_bonuses,
         }
 
 
