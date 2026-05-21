@@ -206,6 +206,53 @@ def gen_run() -> None:
     save_strip(frames, 'run')
 
 
+def gen_run_to_idle() -> None:
+    """7-frame deceleration from run to idle."""
+    poses = [
+        {'body_lean': 6, 'l_leg_x': -5, 'r_leg_x': +7, 'l_arm_x': +7, 'r_arm_x': -7},
+        {'body_lean': 4, 'l_leg_x': -3, 'r_leg_x': +5, 'l_arm_x': +5, 'r_arm_x': -5},
+        {'body_lean': 3, 'l_leg_x': -2, 'r_leg_x': +3, 'l_arm_x': +3, 'r_arm_x': -3},
+        {'body_lean': 2, 'l_leg_x': -1, 'r_leg_x': +2},
+        {'body_lean': 1, 'l_leg_x':  0, 'r_leg_x': +1},
+        {'body_lean': 0, 'body_y': -1},
+        {'body_lean': 0, 'body_y':  0},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'run_to_idle')
+
+
+def gen_idle_turn() -> None:
+    """4-frame 180° turn from idle."""
+    poses = [
+        {},
+        {'body_lean': 3},
+        {'body_lean': 3, 'flip': True},
+        {'flip': True},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'idle_turn')
+
+
+def gen_walk_turn() -> None:
+    """4-frame walk turn."""
+    poses = [
+        {'l_leg_x': -3, 'r_leg_x': +3, 'l_arm_x': +2, 'r_arm_x': -2},
+        {'body_lean': 3, 'l_leg_x': -2, 'r_leg_x': +2},
+        {'body_lean': 3, 'flip': True, 'l_leg_x': -2, 'r_leg_x': +2},
+        {'flip': True, 'l_leg_x': -3, 'r_leg_x': +3, 'l_arm_x': -2, 'r_arm_x': +2},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'walk_turn')
+
+
+def gen_run_turn() -> None:
+    """4-frame run turn."""
+    poses = [
+        {'body_lean':  4, 'l_leg_x': -5, 'r_leg_x': +5, 'l_arm_x': +5, 'r_arm_x': -5},
+        {'body_lean':  6},
+        {'body_lean':  6, 'flip': True},
+        {'body_lean': -4, 'flip': True, 'l_leg_x': -5, 'r_leg_x': +5, 'l_arm_x': -5, 'r_arm_x': +5},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'run_turn')
+
+
 def gen_ledge_hang() -> None:
     """7-frame ledge hang: arms raised, legs dangling."""
     poses = [
@@ -378,6 +425,10 @@ def main():
     gen_idle()
     gen_walk()
     gen_run()
+    gen_run_to_idle()
+    gen_idle_turn()
+    gen_walk_turn()
+    gen_run_turn()
     gen_ledge_hang()
     gen_ledge_climb()
     gen_wall_slide()
