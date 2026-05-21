@@ -18,6 +18,9 @@ from sqlalchemy import select
 from core.database import Character, Quest, SessionFactory
 from core.game_logic import xp_to_next_level
 
+QUEST_STAT_REWARDS = {"daily": 0.3, "weekly": 0.5, "life": 1.0}
+_STAT_CAP = 200.0
+
 # ── Quest templates ───────────────────────────────────────────────────────────
 
 DAILY_TEMPLATES = {
@@ -255,6 +258,15 @@ def complete_quest(quest_id: int) -> dict:
         char = session.get(Character, 1)
         char.xp += quest.xp_reward
 
+        stat_gain = {}
+        stat_delta = QUEST_STAT_REWARDS.get(quest.quest_type, 0.3)
+        stat_name = quest.stat_target
+        if stat_name and hasattr(char, stat_name):
+            old_val = getattr(char, stat_name)
+            new_val = round(min(_STAT_CAP, old_val + stat_delta), 2)
+            setattr(char, stat_name, new_val)
+            stat_gain = {stat_name: round(new_val - old_val, 2)}
+
         from core.game_logic import get_class, get_title, xp_for_level
 
         levelled_up = False
@@ -270,7 +282,72 @@ def complete_quest(quest_id: int) -> dict:
             "xp_awarded": quest.xp_reward,
             "levelled_up": levelled_up,
             "new_level": char.level if levelled_up else None,
+            "stat_gain": stat_gain,
         }
+
+
+def auto_complete_matching_quests(activity_stat: str) -> list[dict]:
+    """
+    Auto-complete any incomplete daily quests whose stat_target matches
+    activity_stat. Awards XP and stat reward (daily rate) for each.
+    Returns a list of result dicts for all auto-completed quests.
+    """
+    today = date.today().isoformat()
+    results = []
+
+    with SessionFactory() as session:
+        char = session.get(Character, 1)
+        if not char:
+            return results
+
+        matching = session.scalars(
+            select(Quest).where(
+                Quest.character_id == 1,
+                Quest.quest_type == "daily",
+                Quest.stat_target == activity_stat,
+                Quest.completed == False,
+                Quest.failed == False,
+                Quest.due_date == today,
+            )
+        ).all()
+
+        from core.game_logic import get_class, get_title, xp_for_level
+
+        for q in matching:
+            q.completed = True
+            q.completed_at = datetime.utcnow()
+            char.xp += q.xp_reward
+
+            stat_gain = {}
+            stat_name = q.stat_target
+            if stat_name and hasattr(char, stat_name):
+                old_val = getattr(char, stat_name)
+                new_val = round(min(_STAT_CAP, old_val + QUEST_STAT_REWARDS["daily"]), 2)
+                setattr(char, stat_name, new_val)
+                stat_gain = {stat_name: round(new_val - old_val, 2)}
+
+            levelled_up = False
+            while char.xp >= xp_for_level(char.level + 1):
+                char.level += 1
+                levelled_up = True
+
+            results.append(
+                {
+                    "quest": q.title,
+                    "xp_awarded": q.xp_reward,
+                    "levelled_up": levelled_up,
+                    "new_level": char.level if levelled_up else None,
+                    "stat_gain": stat_gain,
+                }
+            )
+
+        if matching:
+            char.xp_to_next = xp_to_next_level(char.level)
+            char.char_class = get_class(char)
+            char.title = get_title(char)
+            session.commit()
+
+    return results
 
 
 def get_active_quests() -> dict:
