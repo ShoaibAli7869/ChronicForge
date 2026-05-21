@@ -3,7 +3,7 @@
 from pathlib import Path
 from PIL import Image, ImageDraw
 
-SPRITES = Path("assets/sprites")
+SPRITES = Path(__file__).parent.parent / "assets" / "sprites"
 
 # Palette — all RGBA
 C = {
@@ -274,7 +274,7 @@ def gen_combo_3() -> None:
         {'body_lean':  6, 'r_arm_x': +8,  'r_arm_y': -5},
     ]
     all_poses = windup + hits + spin + finish
-    assert len(all_poses) == 12
+    assert len(all_poses) == 12, f"combo_3 must have exactly 12 poses, got {len(all_poses)}"
     save_strip([draw_frame(p) for p in all_poses], 'combo_3')
 
 
@@ -466,7 +466,7 @@ def gen_death() -> None:
         {'body_y': 27, 'crouch': 26, 'body_lean': 16, 'l_arm_x': -3, 'r_arm_x': +3},
     ]
     all_poses = stagger + kneel + collapse + settle
-    assert len(all_poses) == 23
+    assert len(all_poses) == 23, f"death must have exactly 23 poses, got {len(all_poses)}"
     save_strip([draw_frame(p) for p in all_poses], 'death')
 
 

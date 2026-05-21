@@ -174,6 +174,6 @@ def test_all_sprites_exist_and_correct_dimensions():
 def test_all_sprites_are_rgba():
     for name, _ in ALL_SPRITES:
         path = SPRITES / f"female_hero-{name}.png"
-        if path.exists():
-            img = PILImage.open(path)
-            assert img.mode == 'RGBA', f"{name}.png is not RGBA (got {img.mode})"
+        assert path.exists(), f"female_hero-{name}.png not found"
+        img = PILImage.open(path)
+        assert img.mode == 'RGBA', f"{name}.png is not RGBA (got {img.mode})"
