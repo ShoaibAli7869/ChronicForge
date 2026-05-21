@@ -47,8 +47,12 @@ def _px(img: Image.Image, x: int, y: int, color: tuple):
         img.putpixel((x, y), color)
 
 def _rect(d: ImageDraw.ImageDraw, x1, y1, x2, y2, fill):
-    """Safe filled rectangle."""
-    d.rectangle([max(0, x1), max(0, y1), min(127, x2), min(127, y2)], fill=fill)
+    """Safe filled rectangle — silently skips off-canvas rects."""
+    cx1, cy1 = max(0, x1), max(0, y1)
+    cx2, cy2 = min(127, x2), min(127, y2)
+    if cx1 > cx2 or cy1 > cy2:
+        return
+    d.rectangle([cx1, cy1, cx2, cy2], fill=fill)
 
 def draw_frame(pose: dict = None) -> Image.Image:
     """Draw one 128×128 RGBA frame for the neutral/standing female hero pose.
@@ -84,7 +88,8 @@ def draw_frame(pose: dict = None) -> Image.Image:
     _rect(d, 56+llx+bx, 76+by-llr, 63+llx+bx, 90+by-llr,  C['pnt_sh'])
     _rect(d, 65+rlx+bx, 76+by-rlr, 72+rlx+bx, 90+by-rlr,  C['pnt_sh'])
 
-    # ── THIGHS ────────────────────────────────────────────────
+    # ── THIGHS ─────────────────────────────────────────────────
+    # Thighs hinge at hip (no llr/rlr) — raising a leg compresses shin+boot only.
     _rect(d, 56+llx+bx, 62+by-cr,  63+llx+bx, 76+by,       C['pants'])
     _rect(d, 65+rlx+bx, 62+by-cr,  72+rlx+bx, 76+by,       C['pants'])
 
