@@ -206,6 +206,60 @@ def gen_run() -> None:
     save_strip(frames, 'run')
 
 
+def gen_ledge_hang() -> None:
+    """7-frame ledge hang: arms raised, legs dangling."""
+    poses = [
+        {'body_y':  0, 'l_arm_y': -8, 'r_arm_y': -8, 'l_leg_raise': -3, 'r_leg_raise': -3},
+        {'body_y':  1, 'l_arm_y': -8, 'r_arm_y': -8, 'l_leg_raise': -3, 'r_leg_raise': -3},
+        {'body_y':  0, 'l_arm_y': -9, 'r_arm_y': -9, 'l_leg_raise': -4, 'r_leg_raise': -4},
+        {'body_y':  1, 'l_arm_y': -9, 'r_arm_y': -9, 'l_leg_raise': -4, 'r_leg_raise': -4},
+        {'body_y':  0, 'l_arm_y': -8, 'r_arm_y': -8, 'l_leg_raise': -3, 'r_leg_raise': -3},
+        {'body_y':  1, 'l_arm_y': -8, 'r_arm_y': -8, 'l_leg_raise': -4, 'r_leg_raise': -3},
+        {'body_y':  0, 'l_arm_y': -8, 'r_arm_y': -8, 'l_leg_raise': -3, 'r_leg_raise': -3},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'ledge_hang')
+
+
+def gen_ledge_climb() -> None:
+    """11-frame ledge climb: pull up, swing leg over, stand."""
+    poses = [
+        {'body_y':  2, 'l_arm_y': -10, 'r_arm_y': -10},
+        {'body_y':  0, 'l_arm_y': -10, 'r_arm_y': -10, 'l_leg_raise': 5},
+        {'body_y': -2, 'l_arm_y': -10, 'r_arm_y': -10, 'l_leg_raise': 10},
+        {'body_y': -4, 'l_arm_y':  -8, 'r_arm_y':  -8, 'l_leg_raise': 14},
+        {'body_y': -6, 'l_arm_y':  -6, 'r_arm_y':  -6, 'l_leg_raise': 14},
+        {'body_y': -8, 'l_arm_y':  -4, 'r_arm_y':  -4, 'l_leg_raise': 10},
+        {'body_y': -8, 'l_arm_y':  -2, 'r_arm_y':  -2, 'l_leg_raise':  6},
+        {'body_y': -6, 'crouch': 2},
+        {'body_y': -4, 'crouch': 1},
+        {'body_y': -2},
+        {'body_y':  0},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'ledge_climb')
+
+
+def gen_wall_slide() -> None:
+    """4-frame wall slide: leaning into wall, slow descend."""
+    poses = [
+        {'body_lean': 4, 'l_arm_x': 4, 'r_arm_x': 4, 'l_arm_y': -4, 'r_arm_y': -6},
+        {'body_lean': 4, 'body_y': 1, 'l_arm_x': 4, 'r_arm_x': 4, 'l_arm_y': -3, 'r_arm_y': -5},
+        {'body_lean': 4, 'body_y': 2, 'l_arm_x': 4, 'r_arm_x': 4, 'l_arm_y': -4, 'r_arm_y': -6},
+        {'body_lean': 4, 'body_y': 3, 'l_arm_x': 4, 'r_arm_x': 4, 'l_arm_y': -3, 'r_arm_y': -5},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'wall_slide')
+
+
+def gen_wall_jump() -> None:
+    """4-frame wall jump: push off, airborne."""
+    poses = [
+        {'body_lean':  4, 'l_arm_x': 4, 'r_arm_x': 4, 'l_arm_y': -4, 'r_arm_y': -6},
+        {'body_lean':  0, 'body_y': -2, 'l_arm_x': -4, 'r_arm_x': -2, 'l_arm_y': -6, 'r_arm_y': -4},
+        {'body_lean': -3, 'body_y': -4, 'l_arm_x': -6, 'r_arm_x': -4, 'l_arm_y': -8, 'r_arm_y': -6},
+        {'body_lean': -4, 'body_y': -5, 'l_arm_x': -6, 'r_arm_x': -4, 'l_arm_y': -7, 'r_arm_y': -5},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'wall_jump')
+
+
 def gen_dash() -> None:
     """5-frame dash: extreme forward lean, legs extended back."""
     poses = [
@@ -324,6 +378,10 @@ def main():
     gen_idle()
     gen_walk()
     gen_run()
+    gen_ledge_hang()
+    gen_ledge_climb()
+    gen_wall_slide()
+    gen_wall_jump()
     gen_dash()
     gen_slide()
     gen_hurt()
