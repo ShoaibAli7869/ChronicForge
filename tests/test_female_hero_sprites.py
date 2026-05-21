@@ -128,3 +128,52 @@ def test_air_strips(name, expected_w):
     assert path.exists(), f"{path.name} not found"
     img = PILImage.open(path)
     assert img.size == (expected_w, 128), f"{path.name}: expected {expected_w}x128, got {img.size}"
+
+
+ALL_SPRITES = [
+    ("design",       128),
+    ("idle",        1280),
+    ("idle_turn",    512),
+    ("walk",        1280),
+    ("walk_turn",    512),
+    ("run",         1280),
+    ("run_turn",     512),
+    ("run_to_idle",  896),
+    ("jump",         768),
+    ("fall",         512),
+    ("fall_loop",    384),
+    ("dash",         640),
+    ("slide",       1024),
+    ("hurt",         768),
+    ("death",       2944),
+    ("ledge_hang",   896),
+    ("ledge_climb", 1408),
+    ("wall_slide",   512),
+    ("wall_jump",    512),
+    ("combo_1",      384),
+    ("combo_1_end",  512),
+    ("combo_2",      768),
+    ("combo_2_end",  512),
+    ("combo_3",     1536),
+    ("combo_3_end",  768),
+]
+
+def test_all_sprites_exist_and_correct_dimensions():
+    missing, wrong = [], []
+    for name, expected_w in ALL_SPRITES:
+        path = SPRITES / f"female_hero-{name}.png"
+        if not path.exists():
+            missing.append(name)
+            continue
+        img = PILImage.open(path)
+        if img.size != (expected_w, 128):
+            wrong.append(f"{name}: got {img.size}, expected ({expected_w}, 128)")
+    assert not missing, f"Missing sprites: {missing}"
+    assert not wrong, f"Wrong dimensions: {wrong}"
+
+def test_all_sprites_are_rgba():
+    for name, _ in ALL_SPRITES:
+        path = SPRITES / f"female_hero-{name}.png"
+        if path.exists():
+            img = PILImage.open(path)
+            assert img.mode == 'RGBA', f"{name}.png is not RGBA (got {img.mode})"
