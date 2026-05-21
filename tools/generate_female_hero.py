@@ -206,6 +206,91 @@ def gen_run() -> None:
     save_strip(frames, 'run')
 
 
+def gen_combo_1() -> None:
+    """3-frame quick jab."""
+    poses = [
+        {'body_lean':  2, 'r_arm_x': -3, 'r_arm_y': -2},
+        {'body_lean':  8, 'r_arm_x': +8, 'r_arm_y': -4},
+        {'body_lean':  6, 'r_arm_x': +6, 'r_arm_y': -2},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'combo_1')
+
+
+def gen_combo_1_end() -> None:
+    """4-frame combo_1 recovery."""
+    poses = [
+        {'body_lean':  5, 'r_arm_x': +5, 'r_arm_y': -2},
+        {'body_lean':  3, 'r_arm_x': +3, 'r_arm_y': -1},
+        {'body_lean':  1, 'r_arm_x': +1},
+        {},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'combo_1_end')
+
+
+def gen_combo_2() -> None:
+    """6-frame sweep kick."""
+    poses = [
+        {'body_lean': 2, 'l_leg_x': +2},
+        {'body_lean': 4, 'l_leg_x': +4, 'l_leg_raise': -4, 'body_y': 2},
+        {'body_lean': 6, 'l_leg_x': +8, 'l_leg_raise': -6, 'body_y': 3},
+        {'body_lean': 5, 'l_leg_x': +6, 'l_leg_raise': -4, 'body_y': 2},
+        {'body_lean': 3, 'l_leg_x': +3, 'l_leg_raise': -2, 'body_y': 1},
+        {'body_lean': 1},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'combo_2')
+
+
+def gen_combo_2_end() -> None:
+    """4-frame combo_2 recovery."""
+    poses = [
+        {'body_lean': 4, 'body_y': 1},
+        {'body_lean': 2},
+        {'body_lean': 1},
+        {},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'combo_2_end')
+
+
+def gen_combo_3() -> None:
+    """12-frame heavy combo: windup → 3 hits → spin → finish."""
+    windup = [
+        {'body_lean': -3, 'l_arm_x': -5, 'r_arm_x': -5, 'l_arm_y': -4, 'r_arm_y': -4},
+        {'body_lean': -4, 'l_arm_x': -7, 'r_arm_x': -7, 'l_arm_y': -6, 'r_arm_y': -6},
+    ]
+    hits = [
+        {'body_lean':  4, 'r_arm_x': +6, 'r_arm_y': -4},
+        {'body_lean':  7, 'r_arm_x': +9, 'r_arm_y': -5},
+        {'body_lean':  5, 'r_arm_x': +7, 'r_arm_y': -3},
+        {'body_lean':  3, 'l_arm_x': +5, 'l_arm_y': -3},
+        {'body_lean':  6, 'l_arm_x': +8, 'l_arm_y': -5},
+        {'body_lean': 10, 'l_arm_x': +10, 'r_arm_x': +6, 'l_arm_y': -6, 'r_arm_y': -3},
+    ]
+    spin = [
+        {'body_lean':  5, 'flip': False, 'l_arm_x': +4, 'r_arm_x': +4},
+        {'body_lean':  5, 'flip': True,  'l_arm_x': +4, 'r_arm_x': +4},
+    ]
+    finish = [
+        {'body_lean':  8, 'r_arm_x': +10, 'r_arm_y': -7, 'body_y': -2},
+        {'body_lean':  6, 'r_arm_x': +8,  'r_arm_y': -5},
+    ]
+    all_poses = windup + hits + spin + finish
+    assert len(all_poses) == 12
+    save_strip([draw_frame(p) for p in all_poses], 'combo_3')
+
+
+def gen_combo_3_end() -> None:
+    """6-frame combo_3 recovery."""
+    poses = [
+        {'body_lean': 5, 'body_y': -1, 'r_arm_x': +6},
+        {'body_lean': 4, 'r_arm_x': +4},
+        {'body_lean': 3, 'r_arm_x': +3},
+        {'body_lean': 2},
+        {'body_lean': 1, 'body_y': -1},
+        {},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'combo_3_end')
+
+
 def gen_run_to_idle() -> None:
     """7-frame deceleration from run to idle."""
     poses = [
@@ -425,6 +510,12 @@ def main():
     gen_idle()
     gen_walk()
     gen_run()
+    gen_combo_1()
+    gen_combo_1_end()
+    gen_combo_2()
+    gen_combo_2_end()
+    gen_combo_3()
+    gen_combo_3_end()
     gen_run_to_idle()
     gen_idle_turn()
     gen_walk_turn()
