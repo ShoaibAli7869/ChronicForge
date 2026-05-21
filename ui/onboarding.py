@@ -6,7 +6,7 @@ Illuminated Parchment theme matching the rest of the app.
 import os
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont, QPainter, QPen, QPixmap
+from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QButtonGroup,
     QDialog,
@@ -15,13 +15,11 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QVBoxLayout,
-    QWidget,
 )
 
 from config.settings import (
     is_onboarding_done,
     load_config,
-    mark_onboarding_done,
     save_config,
 )
 from ui.theme import (
@@ -29,9 +27,7 @@ from ui.theme import (
     C_CRIMSON,
     C_GOLD,
     C_GOLD_BRIGHT,
-    C_GOLD_DIM,
     C_INK,
-    C_INK_DIM,
     C_INK_FAINT,
     C_INK_MID,
     C_RULE,
@@ -136,9 +132,6 @@ class _PortraitFrame(QLabel):
         r_inner = self._size // 2
 
         # Outer crimson ring
-        p.setPen(QPen(self.palette().color(self.foregroundRole()), 1))
-        from PySide6.QtGui import QColor
-
         p.setPen(QPen(QColor(C_CRIMSON), 1))
         p.drawEllipse(cx - r_outer, cy - r_outer, r_outer * 2, r_outer * 2)
         # Inner gold ring
