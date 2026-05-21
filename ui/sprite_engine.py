@@ -826,10 +826,10 @@ class SpriteWidget(QWidget):
         state = self._test_anim_queue[self._test_anim_index]
         self._test_anim_index += 1
         print(f"[Sprite Test] Playing {state.name}...")
-        self._set_state(state)
+        self._apply(state)
 
         # Schedule next animation based on current animation length
-        anim = self._anim_config.get(state)
+        anim = self._anim_map.get(state)
         if anim:
             duration = (anim.frames / anim.fps) * 1000  # Convert to milliseconds
             # Add 100ms delay between animations
