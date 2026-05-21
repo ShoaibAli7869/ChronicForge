@@ -603,6 +603,13 @@ _REMARKS = {
         "I blew up a city block once. You can't finish one task today?",
         "Every minute you waste is a minute your future self curses you for.",
     ],
+    "stat_neglect": [
+        "You haven't touched {stat} in over a week. Rot in mediocrity.",
+        "{stat} collecting dust like your dreams. Typical.",
+        "Seven days. Not one {stat} entry. You are the neglect.",
+        "I've seen corpses with more active {stat} stats than you.",
+        "Your {stat} is starving and you're out here living your best life. Pathetic.",
+    ],
 }
 
 
@@ -617,6 +624,38 @@ def proactive_remark(context: str = "idle", speak: bool = True) -> Optional[str]
     _save_roast(text, "neutral", f"proactive_{context}", "template")
 
     print(f"\n[Soldier Boy | PROACTIVE] {text}\n")
+
+    if not speak:
+        return text
+
+    def _on_ready(t: str):
+        try:
+            from utils.signals import event_bus
+
+            event_bus.sprite_remark.emit(t)
+        except Exception:
+            pass
+
+    threading.Thread(
+        target=_speak_soldier_boy,
+        args=(text, _on_ready),
+        daemon=True,
+    ).start()
+    return None
+
+
+def get_neglect_roast(stat: str, speak: bool = True) -> Optional[str]:
+    """
+    Get a Soldier Boy roast for a neglected stat.
+    speak=True  → plays TTS async, fires event_bus.sprite_remark when audio ready.
+                  Returns None (non-blocking).
+    speak=False → returns text immediately, no TTS.
+    """
+    pool = _REMARKS["stat_neglect"]
+    text = random.choice(pool).replace("{stat}", stat.upper())
+    _save_roast(text, "roast", f"stat_neglect_{stat}", "template")
+
+    print(f"\n[Soldier Boy | NEGLECT] {text}\n")
 
     if not speak:
         return text

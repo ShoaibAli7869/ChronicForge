@@ -32,7 +32,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.game_logic import get_character
+from core.game_logic import check_neglected_stats, get_character
 from ui.widgets.radar_chart import RadarChart
 from ui.widgets.stat_bar import StatBar, XPBar
 
@@ -124,13 +124,27 @@ class _StatRow(QWidget):
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
         )
 
+        self._neglect_label = QLabel("⚠")
+        self._neglect_label.setFont(QFont("monospace", 10, QFont.Weight.Bold))
+        self._neglect_label.setStyleSheet(
+            "color:#cc2020; background:transparent;"
+        )
+        self._neglect_label.setToolTip(f"{stat.upper()} has not been trained in 7+ days!")
+        self._neglect_label.setFixedWidth(16)
+        self._neglect_label.hide()
+
         hl.addWidget(icon)
         hl.addWidget(name)
         hl.addWidget(self._bar, stretch=1)
+        hl.addWidget(self._neglect_label)
 
     def set_value(self, v: float):
         if self._bar:
             self._bar.set_value(v)
+
+    def set_neglected(self, is_neglected: bool) -> None:
+        """Show or hide the neglect warning badge."""
+        self._neglect_label.setVisible(is_neglected)
 
 
 # ── Character Tab ─────────────────────────────────────────────────────────────
@@ -341,5 +355,12 @@ class CharacterTab(QWidget):
         stats = char.get("stats", {})
         max_val = max(max(stats.values(), default=10.0), 100.0)
         self._radar.set_stats(stats, max_val)
+
+        try:
+            neglected = set(check_neglected_stats())
+        except Exception:
+            neglected = set()
+
         for stat, row in self._stat_rows.items():
             row.set_value(stats.get(stat, 10.0))
+            row.set_neglected(stat in neglected)
