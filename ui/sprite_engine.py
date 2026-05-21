@@ -508,7 +508,7 @@ class SpriteWidget(QWidget):
         self.move(int(self._px), int(self._py))
         # move() schedules a repaint automatically; call update() only when
         # position did not change so glow/bubble changes still get painted.
-        if self._glow_alpha > 0 or self._bubble_text:
+        if self._glow_alpha > 0 or self._bubble is not None:
             self.update()
 
     # ── Rendering ─────────────────────────────────────────────────────────────

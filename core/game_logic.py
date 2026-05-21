@@ -144,6 +144,7 @@ STAT_TABLE = {1: 0.3, 2: 0.7, 3: 1.4}
 LEVEL_UP_BASE_BONUS = 1.5        # awarded to all stats per level gained
 LEVEL_UP_DOMINANT_EXTRA = 0.5   # extra bonus for class-dominant stat per level gained
 ALL_STATS = list(STAT_KEYWORDS)
+_ALL_STAT_NAMES = ALL_STATS  # alias used by streak/neglect functions
 
 # Streak milestone stat bonuses
 STREAK_STAT_BONUSES: dict[int, dict] = {
