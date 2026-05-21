@@ -153,9 +153,65 @@ def gen_design() -> None:
     save_strip([draw_frame({})], 'design')
 
 
+def gen_idle() -> None:
+    """10-frame breathing cycle — 1-2px vertical bob."""
+    bobs = [0, -1, -2, -2, -1, 0, 0, -1, -1, 0]
+    frames = [draw_frame({'body_y': b}) for b in bobs]
+    save_strip(frames, 'idle')
+
+
+def gen_walk() -> None:
+    """10-frame walk cycle — pendulum legs, counter-swing arms, 2px bob."""
+    poses = [
+        (0,  -3, +3,  0,  0, +3, -3),
+        (-1, -5, +1,  0,  4, +5, -5),
+        (-2, -4, -1,  0,  7, +4, -4),
+        (-1, -2, -3,  3,  4, +2, -2),
+        (0,   0, -4,  5,  0,  0,  0),
+        (0,  +3, -3,  0,  0, -3, +3),
+        (-1, +1, -5,  4,  0, -5, +5),
+        (-2, +1, -4,  7,  0, -4, +4),
+        (-1, +3, -2,  4,  3, -2, +2),
+        (0,  +4,  0,  0,  5,  0,  0),
+    ]
+    frames = [draw_frame({
+        'body_y':      p[0],
+        'l_leg_x':     p[1], 'r_leg_x':     p[2],
+        'l_leg_raise': p[3], 'r_leg_raise': p[4],
+        'l_arm_x':     p[5], 'r_arm_x':     p[6],
+    }) for p in poses]
+    save_strip(frames, 'walk')
+
+
+def gen_run() -> None:
+    """10-frame run cycle — more exaggerated than walk, forward lean."""
+    poses = [
+        (0,  -6, +6,  0,  0, +6, -6),
+        (-2, -8, +2,  0,  7, +8, -8),
+        (-3, -6,  0,  0,  9, +6, -6),
+        (-2, -3, -4,  4,  6, +4, -4),
+        (0,   0, -7,  8,  0,  0,  0),
+        (0,  +6, -6,  0,  0, -6, +6),
+        (-2, +2, -8,  7,  0, -8, +8),
+        (-3,  0, -6,  9,  0, -6, +6),
+        (-2, +4, -3,  6,  4, -4, +4),
+        (0,  +7,  0,  0,  8,  0,  0),
+    ]
+    frames = [draw_frame({
+        'body_y': p[0], 'body_lean': 2,
+        'l_leg_x': p[1], 'r_leg_x': p[2],
+        'l_leg_raise': p[3], 'r_leg_raise': p[4],
+        'l_arm_x': p[5], 'r_arm_x': p[6],
+    }) for p in poses]
+    save_strip(frames, 'run')
+
+
 def main():
     SPRITES.mkdir(parents=True, exist_ok=True)
     gen_design()
+    gen_idle()
+    gen_walk()
+    gen_run()
 
 
 if __name__ == '__main__':

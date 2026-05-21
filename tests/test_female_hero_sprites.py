@@ -45,9 +45,24 @@ def test_draw_frame_bottom_transparent():
     assert all(p[3] == 0 for p in pixels), "bottom padding has pixels"
 
 
+import pytest
+
+
 def test_design_sheet_exists():
     path = SPRITES / "female_hero-design.png"
     assert path.exists(), "female_hero-design.png not found"
     img = PILImage.open(path)
     assert img.size == (128, 128), f"expected 128x128, got {img.size}"
     assert img.mode == 'RGBA'
+
+
+@pytest.mark.parametrize("name,expected_w", [
+    ("idle",  1280),
+    ("walk",  1280),
+    ("run",   1280),
+])
+def test_locomotion_strips(name, expected_w):
+    path = SPRITES / f"female_hero-{name}.png"
+    assert path.exists(), f"{path.name} not found"
+    img = PILImage.open(path)
+    assert img.size == (expected_w, 128), f"{path.name}: expected {expected_w}x128, got {img.size}"
