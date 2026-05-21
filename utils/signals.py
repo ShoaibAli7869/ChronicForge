@@ -21,6 +21,8 @@ class _EventBus(QObject):
     # UI refresh
     stats_updated = Signal()
     quests_updated = Signal()
+    # Journal
+    journal_entry_created = Signal(int)  # entry_id
     # KDE notification
     notify = Signal(str, str)  # title, body
     # Settings changed

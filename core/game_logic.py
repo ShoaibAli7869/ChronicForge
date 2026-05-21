@@ -234,6 +234,41 @@ CLASS_PERKS: dict[str, dict] = {
     "Renaissance Man": {"stat_bonus": "all", "xp_multiplier": 0.08, "desc": "Polymath: +8% XP all"},
 }
 
+# -- Custom quest limits by class tier ----------------------------------------
+
+BASE_QUEST_SLOTS = {"Wanderer": 0, "Novice": 1}
+TIER1_QUEST_SLOTS = 2
+TIER2_QUEST_SLOTS = 3
+SECRET_QUEST_SLOTS = 4
+
+
+def get_max_quest_xp(char) -> int:
+    """Maximum XP a custom quest can award at the character's level."""
+    lvl = char.level
+    if lvl < 3:
+        return 50 + lvl * 10
+    elif lvl < 15:
+        return 100 + lvl * 10
+    else:
+        return 200 + lvl * 10
+
+
+def get_max_custom_quests(char) -> int:
+    """How many custom quests the character can create."""
+    cls = char.char_class
+    perk = CLASS_PERKS.get(cls, {})
+    extra = perk.get("extra_quest_slots", 0)
+    if cls in BASE_QUEST_SLOTS:
+        return BASE_QUEST_SLOTS[cls] + extra
+    if cls in SECRET_CLASSES or cls in ("Phantom", "Overlord"):
+        return SECRET_QUEST_SLOTS + extra
+    if char.level >= 15:
+        return TIER2_QUEST_SLOTS + extra
+    if char.level >= 5:
+        return TIER1_QUEST_SLOTS + extra
+    return BASE_QUEST_SLOTS.get("Novice", 1) + extra
+
+
 
 def get_class_perks(char) -> dict:
     """Return the active perk dict for the character's current class."""
@@ -573,10 +608,11 @@ def log_activity(
     activity: str,
     intensity: int = 2,
     notes: Optional[str] = None,
-    stat_override: Optional[str] = None,
+    _stat_override: Optional[str] = None,
 ) -> dict:
     """
     Log an activity, award XP and stat points, check level-up.
+    _stat_override is INTERNAL ONLY (used by quick-log chips).
     Returns a result dict with everything that happened.
     """
     with SessionFactory() as session:
@@ -588,15 +624,58 @@ def log_activity(
         intensity = max(1, min(3, intensity))
 
         # Detect stat
-        stat = stat_override or detect_stat(activity)
+        stat = _stat_override or detect_stat(activity)
         if stat not in STAT_KEYWORDS:
             stat = "discipline"
 
-        # Calculate XP (with streak bonus)
+        # --- DUPLICATE CHECK: same activity on same day? ---
+        effective_today = get_effective_date()
+        from sqlalchemy import select as _sel
+
+        dupe = session.scalars(
+            _sel(LogEntry).where(
+                LogEntry.character_id == 1,
+                LogEntry.date == effective_today,
+                LogEntry.activity == activity.strip()[:100],
+            )
+        ).first()
+        if dupe is not None:
+            return {
+                "error": f'Already logged "{activity}" today.',
+                "duplicate": True,
+            }
+
+        # --- XP calculation with class perks ---
         base_xp = XP_TABLE[intensity]
-        streak_mult = 1.0 + min(char.current_streak * 0.05, 0.5)  # up to +50%
+        streak_mult = 1.0 + min(char.current_streak * 0.05, 0.5)
         xp_awarded = int(base_xp * streak_mult)
         stat_delta = STAT_TABLE[intensity]
+
+        # Class perk: stat-specific XP multiplier
+        perks = get_class_perks(char)
+        if perks.get("stat_bonus") in (stat, "all"):
+            mult = perks.get("xp_multiplier", 0)
+            bonus = int(xp_awarded * mult)
+            xp_awarded += bonus
+
+        # Class perk: compound interest (Magnate)
+        ci = perks.get("compound_interest", 0)
+        if ci > 0:
+            tiers = char.current_streak // 10
+            ci_bonus = int(xp_awarded * min(tiers * ci, 0.20))
+            xp_awarded += ci_bonus
+
+        # --- Daily XP soft-cap ---
+        max_daily_xp = 300 + char.level * 50  # L1:350, L5:550, L15:1050
+        today_entries = session.scalars(
+            _sel(LogEntry).where(
+                LogEntry.character_id == 1,
+                LogEntry.date == effective_today,
+            )
+        ).all()
+        already_earned = sum(e.xp_awarded for e in today_entries)
+        if already_earned + xp_awarded > max_daily_xp:
+            xp_awarded = max(0, max_daily_xp - already_earned)
 
         # Apply to character
         char.xp += xp_awarded
@@ -604,7 +683,6 @@ def log_activity(
         setattr(char, stat, round(min(200.0, current_val + stat_delta), 2))
 
         # Update streak using grace period logic
-        effective_today = get_effective_date()
         yesterday = (date.today() - timedelta(days=1)).isoformat()
         if char.last_active_date == effective_today:
             pass  # already logged today
@@ -621,7 +699,7 @@ def log_activity(
         # Log entry
         entry = LogEntry(
             character_id=char.id,
-            date=today,
+            date=effective_today,
             category=stat,
             activity=activity,
             notes=notes,
@@ -654,6 +732,18 @@ def log_activity(
 
         session.commit()
 
+    # FIX 4: Auto-complete daily quests matching this stat (lazy import avoids circular)
+    try:
+        from core.quest_system import auto_complete_matching_quests as _acq
+
+        auto_quests = _acq(stat)
+    except Exception:
+        auto_quests = []
+
+    with SessionFactory() as session:
+        char = session.get(Character, 1)
+        if char is None:
+            return {"error": "Character not found."}
         return {
             "activity": activity,
             "stat": stat,
@@ -671,7 +761,26 @@ def log_activity(
             "xp_to_next": char.xp_to_next,
             "stat_bonuses": stat_bonuses,
             "milestone_bonuses": milestone_bonuses,
+            "auto_quests": auto_quests,
         }
+
+
+def sync_character_class() -> None:
+    """Recalculate char_class and title from current level/stats and persist if stale.
+
+    Called at startup to fix characters whose class is stale in the DB
+    (e.g. still 'Wanderer' at level 14 because no activity was ever logged).
+    """
+    with SessionFactory() as session:
+        char = session.get(Character, 1)
+        if char is None:
+            return
+        correct_class = get_class(char)
+        correct_title = get_title(char)
+        if char.char_class != correct_class or char.title != correct_title:
+            char.char_class = correct_class
+            char.title = correct_title
+            session.commit()
 
 
 def get_character() -> dict:
@@ -688,7 +797,7 @@ def get_character() -> dict:
             "xp": char.xp,
             "xp_to_next": char.xp_to_next,
             "xp_percent": round(
-                (char.xp - xp_for_level(char.level))
+                max(0.0, (char.xp - xp_for_level(char.level)))
                 / max(1, xp_to_next_level(char.level))
                 * 100,
                 1,
@@ -722,6 +831,7 @@ def get_recent_logs(days: int = 7) -> list[dict]:
                 "stat": e.category,
                 "xp": e.xp_awarded,
                 "intensity": e.intensity,
+                "notes": e.notes or "",
             }
             for e in entries
         ]

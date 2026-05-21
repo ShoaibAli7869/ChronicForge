@@ -1,27 +1,35 @@
 """
-core/backup.py — auto-backup to ~/.local/share/chronicforge/backups/
-JSON export and CSV export.
+ChronicForge — Backup & Export System
+Auto-backups SQLite DB daily. Exports to JSON/CSV.
+Restores from backup.
+
+Backup location: ~/.local/share/chronicforge/backups/
+  Keeps last 30 daily backups. Auto-runs at midnight tick.
+
+Export location: ~/ChronicForge_export_YYYY-MM-DD/
 """
 
 import csv
-import glob
 import json
 import os
 import shutil
 from datetime import date, datetime
 from typing import Optional
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
-from core.database import Achievement, Character, LogEntry, Quest, Roast, SessionFactory
-
-BACKUP_DIR = os.path.expanduser("~/.local/share/chronicforge/backups")
 DB_PATH = os.path.expanduser("~/.local/share/chronicforge/save.db")
+BACKUP_DIR = os.path.expanduser("~/.local/share/chronicforge/backups")
 MAX_BACKUPS = 30
 
 
+# ── Backup ────────────────────────────────────────────────────────────────────
+
+
 def create_backup(label: str = "") -> Optional[str]:
+    """
+    Copy save.db to backups/ with today's date stamp.
+    Returns path to backup file, or None on failure.
+    Silently skips if a backup for today already exists.
+    """
     if not os.path.exists(DB_PATH):
         return None
 
@@ -36,7 +44,15 @@ def create_backup(label: str = "") -> Optional[str]:
 
     try:
         shutil.copy2(DB_PATH, dst)
+
+        # FIX 1: Also back up config.toml alongside the DB
+        config_src = os.path.expanduser("~/.config/chronicforge/config.toml")
+        if os.path.exists(config_src):
+            config_dst = dst.replace(".db", "_config.toml")
+            shutil.copy2(config_src, config_dst)
+
         _prune_old_backups()
+        print(f"[ChronicForge] Backup created: {filename}")
         return dst
     except Exception as e:
         print(f"[ChronicForge] Backup failed: {e}")
@@ -44,6 +60,7 @@ def create_backup(label: str = "") -> Optional[str]:
 
 
 def _prune_old_backups():
+    """Keep only the last MAX_BACKUPS backup files."""
     try:
         files = sorted(
             [f for f in os.listdir(BACKUP_DIR) if f.endswith(".db")], reverse=True
@@ -55,6 +72,7 @@ def _prune_old_backups():
 
 
 def list_backups() -> list[dict]:
+    """Return list of available backups with metadata."""
     if not os.path.isdir(BACKUP_DIR):
         return []
     result = []
@@ -76,95 +94,194 @@ def list_backups() -> list[dict]:
 
 
 def restore_backup(backup_path: str) -> bool:
+    """
+    Restore a backup. Creates a safety backup of current DB first.
+    Returns True on success.
+    """
     if not os.path.exists(backup_path):
         return False
     try:
+        # Safety backup of current state
         create_backup("pre_restore")
         shutil.copy2(backup_path, DB_PATH)
+        print(f"[ChronicForge] Restored from: {backup_path}")
         return True
     except Exception as e:
         print(f"[ChronicForge] Restore failed: {e}")
         return False
 
 
+# ── Export ────────────────────────────────────────────────────────────────────
+
+
 def export_json(output_dir: Optional[str] = None) -> str:
+    """
+    Export all data to JSON.
+    Returns path to the created file.
+    """
+    from sqlalchemy import select
+
+    from core.database import (
+        Achievement,
+        Character,
+        LogEntry,
+        Quest,
+        Roast,
+        SessionFactory,
+    )
+
     if output_dir is None:
         output_dir = os.path.expanduser(
             f"~/ChronicForge_export_{date.today().isoformat()}"
         )
     os.makedirs(output_dir, exist_ok=True)
-    filepath = os.path.join(output_dir, "chronicforge_data.json")
 
-    data = {}
+    data: dict = {}
+
     with SessionFactory() as session:
         char = session.get(Character, 1)
         if char:
             data["character"] = {
-                c.name: getattr(char, c.name)
-                for c in char.__table__.columns
-                if c.name not in ["created_at", "updated_at"]
+                "name": char.name,
+                "title": char.title,
+                "class": char.char_class,
+                "level": char.level,
+                "xp": char.xp,
+                "stats": char.stats_dict,
+                "streak": char.current_streak,
+                "longest_streak": char.longest_streak,
+                "created_at": char.created_at.isoformat(),
             }
 
+        entries = session.scalars(
+            select(LogEntry)
+            .where(LogEntry.character_id == 1)
+            .order_by(LogEntry.created_at)
+        ).all()
         data["log_entries"] = [
             {
-                c.name: getattr(entry, c.name)
-                for c in entry.__table__.columns
-                if c.name not in ["created_at", "updated_at"]
+                "id": e.id,
+                "date": e.date,
+                "activity": e.activity,
+                "stat": e.category,
+                "xp": e.xp_awarded,
+                "intensity": e.intensity,
+                "notes": e.notes,
+                "created_at": e.created_at.isoformat(),
             }
-            for entry in session.query(LogEntry).all()
+            for e in entries
         ]
+
+        quests = session.scalars(select(Quest).where(Quest.character_id == 1)).all()
         data["quests"] = [
             {
-                c.name: getattr(quest, c.name)
-                for c in quest.__table__.columns
-                if c.name not in ["created_at", "updated_at", "completed_at"]
+                "id": q.id,
+                "title": q.title,
+                "type": q.quest_type,
+                "stat": q.stat_target,
+                "xp_reward": q.xp_reward,
+                "completed": q.completed,
+                "failed": q.failed,
+                "due_date": q.due_date,
             }
-            for quest in session.query(Quest).all()
+            for q in quests
         ]
+
+        roasts = session.scalars(
+            select(Roast).where(Roast.character_id == 1).order_by(Roast.created_at)
+        ).all()
+        data["roast_journal"] = [
+            {
+                "text": r.text,
+                "type": r.roast_type,
+                "trigger": r.trigger,
+                "source": r.source,
+                "date": r.created_at.isoformat(),
+            }
+            for r in roasts
+        ]
+
+        achievements = session.scalars(
+            select(Achievement).where(Achievement.character_id == 1)
+        ).all()
         data["achievements"] = [
-            {
-                c.name: getattr(ach, c.name)
-                for c in ach.__table__.columns
-                if c.name not in ["unlocked_at"]
-            }
-            for ach in session.query(Achievement).all()
-        ]
-        data["roasts"] = [
-            {
-                c.name: getattr(roast, c.name)
-                for c in roast.__table__.columns
-                if c.name not in ["created_at"]
-            }
-            for roast in session.query(Roast).all()
+            {"key": a.key, "title": a.title, "unlocked_at": a.unlocked_at.isoformat()}
+            for a in achievements
         ]
 
-    with open(filepath, "w") as f:
-        json.dump(data, f, indent=2)
+    data["exported_at"] = datetime.utcnow().isoformat()
+    data["version"] = "chronicforge_v2"
 
-    return filepath
+    out_path = os.path.join(output_dir, "chronicforge_data.json")
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+    print(f"[ChronicForge] JSON export: {out_path}")
+    return out_path
 
 
 def export_csv(output_dir: Optional[str] = None) -> str:
+    """
+    Export log entries to CSV for spreadsheet use.
+    Returns path to created file.
+    """
+    from sqlalchemy import select
+
+    from core.database import LogEntry, SessionFactory
+
     if output_dir is None:
         output_dir = os.path.expanduser(
             f"~/ChronicForge_export_{date.today().isoformat()}"
         )
     os.makedirs(output_dir, exist_ok=True)
-    filepath = os.path.join(output_dir, "chronicforge_log.csv")
+
+    out_path = os.path.join(output_dir, "chronicforge_log.csv")
 
     with SessionFactory() as session:
-        entries = session.query(LogEntry).all()
+        entries = session.scalars(
+            select(LogEntry)
+            .where(LogEntry.character_id == 1)
+            .order_by(LogEntry.date, LogEntry.created_at)
+        ).all()
 
-        with open(filepath, "w", newline="") as f:
-            if not entries:
-                f.write("No log entries.")
-                return filepath
+    with open(out_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            [
+                "date",
+                "activity",
+                "stat",
+                "xp_awarded",
+                "intensity",
+                "notes",
+                "created_at",
+            ]
+        )
+        for e in entries:
+            writer.writerow(
+                [
+                    e.date,
+                    e.activity,
+                    e.category,
+                    e.xp_awarded,
+                    e.intensity,
+                    e.notes or "",
+                    e.created_at.isoformat(),
+                ]
+            )
 
-            writer = csv.writer(f)
-            cols = [c.name for c in LogEntry.__table__.columns]
-            writer.writerow(cols)
+    print(f"[ChronicForge] CSV export: {out_path}")
+    return out_path
 
-            for entry in entries:
-                writer.writerow([getattr(entry, c) for c in cols])
 
-    return filepath
+def export_all(output_dir: Optional[str] = None) -> dict[str, str]:
+    """Export both JSON and CSV. Returns {'json': path, 'csv': path}."""
+    if output_dir is None:
+        output_dir = os.path.expanduser(
+            f"~/ChronicForge_export_{date.today().isoformat()}"
+        )
+    return {
+        "json": export_json(output_dir),
+        "csv": export_csv(output_dir),
+        "dir": output_dir,
+    }

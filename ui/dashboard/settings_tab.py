@@ -1,5 +1,5 @@
 """
-ChronicForge — Settings Tab  (v3 — Medieval Codex)
+ChronicForge — Settings Tab  (v6 — Illuminated Parchment)
 Same ruled parchment aesthetic as the other tabs.
 """
 
@@ -22,20 +22,24 @@ from PySide6.QtWidgets import (
 )
 
 from config.settings import load_config, save_config
+from ui.theme import (
+    C_BG,
+    C_GOLD,
+    C_GOLD_BRIGHT,
+    C_GOLD_DIM,
+    C_GREEN,
+    C_INK,
+    C_INK_DIM,
+    C_INK_FAINT,
+    C_RED,
+    C_RULE,
+    C_RULE_GOLD,
+    C_SURFACE,
+    font_cinzel,
+    font_mono,
+    font_serif,
+)
 from utils.signals import event_bus
-
-C_BG = "#0d0802"
-C_SURFACE = "#110a03"
-C_RULE = "#2a1a08"
-C_RULE_GOLD = "#4a3010"
-C_GOLD = "#c8a020"
-C_GOLD_DIM = "#7a5c10"
-C_GOLD_BRIGHT = "#f5c842"
-C_INK = "#d4b870"
-C_INK_DIM = "#7a5a30"
-C_INK_FAINT = "#3a2810"
-C_GREEN = "#50a030"
-C_RED = "#b03020"
 
 
 class _Divider(QWidget):
@@ -69,14 +73,14 @@ class _Divider(QWidget):
 
 def _section_header(text: str) -> QLabel:
     l = QLabel(text)
-    l.setFont(QFont("monospace", 7, QFont.Weight.Bold))
+    l.setFont(font_cinzel(7, QFont.Weight.Bold))
     l.setStyleSheet(f"color:{C_INK_FAINT}; background:transparent; letter-spacing:4px;")
     return l
 
 
 def _field_label(text: str) -> QLabel:
     l = QLabel(text)
-    l.setFont(QFont("monospace", 8))
+    l.setFont(font_mono(8))
     l.setStyleSheet(f"color:{C_INK_DIM}; background:transparent;")
     return l
 
@@ -86,7 +90,7 @@ def _input(placeholder="", password=False) -> QLineEdit:
     f.setPlaceholderText(placeholder)
     if password:
         f.setEchoMode(QLineEdit.EchoMode.Password)
-    f.setFont(QFont("monospace", 10))
+    f.setFont(font_mono(10))
     f.setFixedHeight(36)
     f.setStyleSheet(f"""
         QLineEdit {{
@@ -122,7 +126,7 @@ class SettingsTab(QWidget):
 
         # Page title
         title = QLabel("CONFIGURATION SCROLL")
-        title.setFont(QFont("monospace", 14, QFont.Weight.Bold))
+        title.setFont(font_cinzel(13, QFont.Weight.Bold))
         title.setStyleSheet(
             f"color:{C_GOLD_BRIGHT}; background:transparent; letter-spacing:4px;"
         )
@@ -196,7 +200,7 @@ class SettingsTab(QWidget):
         for val, label, sub, border, col in [
             (1, "·  MILD", "Grudging respect. Safe-ish.", C_RULE, C_GREEN),
             (2, "·· SAVAGE", "Full Soldier Boy. No filter.", C_RULE_GOLD, C_GOLD),
-            (3, "··· NUCLEAR", "Completely unhinged. Godspeed.", "#4a1010", C_RED),
+            (3, "··· NUCLEAR", "Completely unhinged. Godspeed.", "#6a1818", C_RED),
         ]:
             tile = QWidget()
             tile.setStyleSheet(f"background:{C_SURFACE}; border:1px solid {border};")
@@ -206,7 +210,7 @@ class SettingsTab(QWidget):
 
             btn = QPushButton(label)
             btn.setCheckable(True)
-            btn.setFont(QFont("monospace", 9, QFont.Weight.Bold))
+            btn.setFont(font_mono(9, QFont.Weight.Bold))
             btn.setStyleSheet(f"""
                 QPushButton {{
                     background:transparent; color:{col};
@@ -221,7 +225,7 @@ class SettingsTab(QWidget):
             self._int_btns[val] = btn
 
             s = QLabel(sub)
-            s.setFont(QFont("monospace", 7))
+            s.setFont(font_mono(7))
             s.setStyleSheet(f"color:{C_INK_FAINT}; background:transparent;")
 
             tl.addWidget(btn)
@@ -255,7 +259,7 @@ class SettingsTab(QWidget):
             QSlider::sub-page:horizontal {{ background:{C_GOLD_DIM}; }}
         """)
         self._scale_val = QLabel("3×")
-        self._scale_val.setFont(QFont("monospace", 9))
+        self._scale_val.setFont(font_mono(9))
         self._scale_val.setStyleSheet(f"color:{C_GOLD}; background:transparent;")
         self._scale_val.setFixedWidth(28)
         self._scale_slider.valueChanged.connect(
@@ -282,7 +286,7 @@ class SettingsTab(QWidget):
             ("📊  Export CSV", "_do_export_csv"),
         ]:
             btn = QPushButton(label)
-            btn.setFont(QFont("monospace", 9))
+            btn.setFont(font_mono(9))
             btn.setStyleSheet(f"""
                 QPushButton {{
                     background:{C_SURFACE}; color:{C_INK_DIM};
@@ -290,7 +294,7 @@ class SettingsTab(QWidget):
                 }}
                 QPushButton:hover {{
                     color:{C_GOLD}; border-color:{C_RULE_GOLD};
-                    background:#1e1206;
+                    background:#d5cca8;
                 }}
             """)
             btn.clicked.connect(getattr(self, fn_name))
@@ -299,7 +303,7 @@ class SettingsTab(QWidget):
         root.addLayout(backup_row)
 
         self._backup_status = QLabel("")
-        self._backup_status.setFont(QFont("monospace", 8))
+        self._backup_status.setFont(font_mono(8))
         self._backup_status.setStyleSheet(f"background:transparent;")
         root.addWidget(self._backup_status)
         root.addSpacing(12)
@@ -326,7 +330,7 @@ class SettingsTab(QWidget):
         self._sounds_btn = QPushButton("✦  Sounds Enabled")
         self._sounds_btn.setCheckable(True)
         self._sounds_btn.setChecked(True)
-        self._sounds_btn.setFont(QFont("monospace", 9))
+        self._sounds_btn.setFont(font_mono(9))
         self._sounds_btn.setStyleSheet(f"""
             QPushButton {{
                 background:{C_SURFACE}; color:{C_INK_FAINT};
@@ -334,7 +338,7 @@ class SettingsTab(QWidget):
             }}
             QPushButton:checked {{
                 color:{C_GOLD}; border-color:{C_RULE_GOLD};
-                background:#1e1206;
+                background:#d5cca8;
             }}
         """)
         self._sounds_btn.toggled.connect(self._toggle_sounds)
@@ -346,17 +350,69 @@ class SettingsTab(QWidget):
         root.addSpacing(14)
 
         # ── HOTKEY ────────────────────────────────────────────────────────────
+        # ── MONTHLY RECAP ─────────────────────────────────────────────────────
+        root.addWidget(_section_header("MONTHLY RECAP"))
+        root.addSpacing(8)
+
+        recap_row = QHBoxLayout()
+        recap_row.setSpacing(12)
+        recap_btn = QPushButton("📜  Generate This Month's Recap")
+        recap_btn.setFont(font_mono(9))
+        recap_btn.setStyleSheet(f"""
+            QPushButton {{
+                background:{C_SURFACE}; color:{C_INK_DIM};
+                border:1px solid {C_RULE}; padding:8px 18px;
+            }}
+            QPushButton:hover {{
+                color:{C_GOLD}; border-color:{C_RULE_GOLD};
+                background:#d5cca8;
+            }}
+        """)
+        recap_btn.clicked.connect(self._do_recap)
+        self._recap_status = QLabel("Auto-generates on 1st of each month.")
+        self._recap_status.setFont(font_mono(8))
+        self._recap_status.setStyleSheet(
+            f"color:{C_INK_FAINT}; background:transparent;"
+        )
+        recap_row.addWidget(recap_btn)
+        recap_row.addWidget(self._recap_status)
+        recap_row.addStretch()
+        root.addLayout(recap_row)
+        root.addSpacing(14)
+        root.addWidget(_Divider(C_RULE))
+        root.addSpacing(14)
+
         root.addWidget(_section_header("GLOBAL HOTKEY"))
+        root.addSpacing(8)
+
+        # Current binding display badge
+        hotkey_badge_row = QHBoxLayout()
+        hotkey_badge_row.setSpacing(10)
+        hotkey_badge_lbl = QLabel("ACTIVE BINDING")
+        hotkey_badge_lbl.setFont(font_cinzel(7, QFont.Weight.Bold))
+        hotkey_badge_lbl.setStyleSheet(
+            f"color:{C_INK_FAINT}; background:transparent; letter-spacing:2px;"
+        )
+        self._hotkey_badge = QLabel("Ctrl + Shift + L")
+        self._hotkey_badge.setFont(font_serif(10, QFont.Weight.Bold))
+        self._hotkey_badge.setStyleSheet(
+            f"color:{C_GOLD}; background:{C_SURFACE}; "
+            f"border:1px solid {C_RULE_GOLD}; padding:4px 14px;"
+        )
+        hotkey_badge_row.addWidget(hotkey_badge_lbl)
+        hotkey_badge_row.addWidget(self._hotkey_badge)
+        hotkey_badge_row.addStretch()
+        root.addLayout(hotkey_badge_row)
         root.addSpacing(8)
 
         hotkey_row = QHBoxLayout()
         hotkey_row.setSpacing(12)
-        hotkey_lbl = _field_label("Trigger combo  (default: Ctrl+Shift+L)")
-        hotkey_lbl.setFixedWidth(260)
+        hotkey_lbl = _field_label("Change combo  (pynput format)")
+        hotkey_lbl.setFixedWidth(220)
         self._hotkey_field = _input("<ctrl>+<shift>+l")
         self._hotkey_field.setFixedWidth(200)
-        hotkey_hint = QLabel("Requires pynput · pip install pynput")
-        hotkey_hint.setFont(QFont("monospace", 7))
+        hotkey_hint = QLabel("pip install pynput  ·  restart to apply")
+        hotkey_hint.setFont(font_mono(7))
         hotkey_hint.setStyleSheet(f"color:{C_INK_FAINT}; background:transparent;")
         hotkey_row.addWidget(hotkey_lbl)
         hotkey_row.addWidget(self._hotkey_field)
@@ -371,7 +427,7 @@ class SettingsTab(QWidget):
         save_row = QHBoxLayout()
         save_row.setSpacing(14)
         self._save_btn = QPushButton("✦  Inscribe the Configuration")
-        self._save_btn.setFont(QFont("monospace", 10, QFont.Weight.Bold))
+        self._save_btn.setFont(font_serif(10, QFont.Weight.Bold))
         self._save_btn.setFixedWidth(260)
         self._save_btn.setStyleSheet(f"""
             QPushButton {{
@@ -380,13 +436,13 @@ class SettingsTab(QWidget):
                 letter-spacing:1px;
             }}
             QPushButton:hover {{
-                background:#1e1206; border-color:{C_GOLD}; color:{C_GOLD_BRIGHT};
+                background:#d5cca8; border-color:{C_GOLD}; color:{C_GOLD_BRIGHT};
             }}
         """)
         self._save_btn.clicked.connect(self._save)
 
         self._save_status = QLabel("")
-        self._save_status.setFont(QFont("monospace", 9))
+        self._save_status.setFont(font_mono(9))
         self._save_status.setStyleSheet(f"background:transparent;")
 
         save_row.addWidget(self._save_btn)
@@ -399,6 +455,35 @@ class SettingsTab(QWidget):
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.addWidget(scroll)
+
+    def _do_recap(self):
+        """Generate monthly recap PDF in background thread."""
+        self._recap_status.setText("⏳  Generating recap PDF...")
+        self._recap_status.setStyleSheet(f"color:{C_GOLD}; background:transparent;")
+        import threading
+
+        from core.monthly_recap import generate_monthly_recap
+
+        def _run():
+            try:
+                path = generate_monthly_recap()
+                import os
+                import subprocess
+
+                self._recap_status.setText(f"✦  Saved to ~/ChronicForge_Recaps/")
+                self._recap_status.setStyleSheet(
+                    f"color:{C_GREEN}; background:transparent;"
+                )
+                # Open the folder
+                folder = os.path.expanduser("~/ChronicForge_Recaps")
+                subprocess.run(["xdg-open", folder], check=False)
+            except Exception as e:
+                self._recap_status.setText(f"✗  Failed: {str(e)[:40]}")
+                self._recap_status.setStyleSheet(
+                    f"color:{C_RED}; background:transparent;"
+                )
+
+        threading.Thread(target=_run, daemon=True).start()
 
     def _do_backup(self):
         from core.backup import create_backup
@@ -446,7 +531,7 @@ class SettingsTab(QWidget):
         from PySide6.QtCore import QTimer
 
         btn = QPushButton(f"📁  Open: {os.path.basename(folder_path)}")
-        btn.setFont(QFont("monospace", 8))
+        btn.setFont(font_mono(8))
         btn.setStyleSheet(f"""
             QPushButton {{
                 background:transparent; color:{C_GOLD_DIM};
@@ -468,9 +553,11 @@ class SettingsTab(QWidget):
         # Clear existing items
         while self._backup_list_layout.count():
             item = self._backup_list_layout.takeAt(0)
-            if item.widget():
-                item.widget().setParent(None)
-                item.widget().deleteLater()
+            if item is not None:
+                w = item.widget()
+                if w is not None:
+                    w.setParent(None)
+                    w.deleteLater()
 
         from core.backup import list_backups, restore_backup
 
@@ -478,7 +565,7 @@ class SettingsTab(QWidget):
 
         if not backups:
             empty = QLabel("No backups yet. Create one above.")
-            empty.setFont(QFont("monospace", 8))
+            empty.setFont(font_mono(8))
             empty.setStyleSheet(f"color:{C_INK_FAINT}; background:transparent;")
             self._backup_list_layout.addWidget(empty)
             return
@@ -490,17 +577,17 @@ class SettingsTab(QWidget):
             name_lbl = QLabel(
                 b["filename"].replace("chronicforge_", "").replace(".db", "")
             )
-            name_lbl.setFont(QFont("monospace", 8))
+            name_lbl.setFont(font_mono(8))
             name_lbl.setStyleSheet(f"color:{C_INK_DIM}; background:transparent;")
             name_lbl.setFixedWidth(200)
 
             size_lbl = QLabel(f"{b['size_kb']} KB")
-            size_lbl.setFont(QFont("monospace", 8))
+            size_lbl.setFont(font_mono(8))
             size_lbl.setStyleSheet(f"color:{C_INK_FAINT}; background:transparent;")
             size_lbl.setFixedWidth(60)
 
             restore_btn = QPushButton("Restore")
-            restore_btn.setFont(QFont("monospace", 8))
+            restore_btn.setFont(font_mono(8))
             restore_btn.setFixedWidth(70)
             restore_btn.setStyleSheet(f"""
                 QPushButton {{
@@ -509,7 +596,7 @@ class SettingsTab(QWidget):
                 }}
                 QPushButton:hover {{
                     color:{C_RED}; border-color:{C_RED};
-                    background:#1e0808;
+                    background:#d5cca8;
                 }}
             """)
             bpath = b["path"]
@@ -597,7 +684,19 @@ class SettingsTab(QWidget):
             "✦  Sounds Enabled" if self._cfg.sounds_enabled else "·  Sounds Disabled"
         )
         if hasattr(self, "_hotkey_field"):
-            self._hotkey_field.setText(getattr(self._cfg, "hotkey", "<ctrl>+<shift>+l"))
+            combo = getattr(self._cfg, "hotkey", "<ctrl>+<shift>+l")
+            self._hotkey_field.setText(combo)
+            if hasattr(self, "_hotkey_badge"):
+                # Convert pynput format to human-readable
+                human = (
+                    combo.replace("<ctrl>", "Ctrl")
+                    .replace("<shift>", "Shift")
+                    .replace("<alt>", "Alt")
+                    .replace("<cmd>", "Cmd")
+                    .replace("+", " + ")
+                    .upper()
+                )
+                self._hotkey_badge.setText(human)
 
     def _save(self):
         name = self._name_field.text().strip() or "Hero"
@@ -612,7 +711,17 @@ class SettingsTab(QWidget):
         self._cfg.ai.groq_model = self._groq_model.text().strip() or "llama3-70b-8192"
         self._cfg.sprite.scale = self._scale_slider.value()
         if hasattr(self, "_hotkey_field"):
-            self._cfg.hotkey = self._hotkey_field.text().strip() or "<ctrl>+<shift>+l"
+            new_combo = self._hotkey_field.text().strip() or "<ctrl>+<shift>+l"
+            self._cfg.hotkey = new_combo
+            if hasattr(self, "_hotkey_badge"):
+                human = (
+                    new_combo.replace("<ctrl>", "Ctrl")
+                    .replace("<shift>", "Shift")
+                    .replace("<alt>", "Alt")
+                    .replace("+", " + ")
+                    .upper()
+                )
+                self._hotkey_badge.setText(human)
 
         for env_key, widget in [
             ("CARTESIA_API_KEY", self._cartesia_key),

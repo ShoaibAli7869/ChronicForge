@@ -33,20 +33,20 @@ from core.quest_system import (
 from utils.signals import event_bus
 
 # ── Palette ───────────────────────────────────────────────────────────────────
-C_BG = "#0d0802"
-C_SURFACE = "#110a03"
-C_RULE = "#2a1a08"
-C_RULE_GOLD = "#4a3010"
-C_GOLD = "#c8a020"
-C_GOLD_DIM = "#7a5c10"
-C_GOLD_BRIGHT = "#f5c842"
-C_INK = "#d4b870"
-C_INK_DIM = "#7a5a30"
-C_INK_FAINT = "#3a2810"
-C_PURPLE = "#8060c0"
-C_RED = "#b03820"
-C_GREEN_DIM = "#2a5a18"
-C_GREEN = "#50a030"
+C_BG = "#e8e0cc"
+C_SURFACE = "#ddd5b5"
+C_RULE = "#c0b488"
+C_RULE_GOLD = "#a89060"
+C_GOLD = "#c8820a"
+C_GOLD_DIM = "#a06808"
+C_GOLD_BRIGHT = "#6b3a10"
+C_INK = "#3a2a18"
+C_INK_DIM = "#8a7050"
+C_INK_FAINT = "#a89060"
+C_PURPLE = "#4a2860"
+C_RED = "#8b1a1a"
+C_GREEN_DIM = "#2a6a30"
+C_GREEN = "#2a6a30"
 
 STAT_ICONS = {
     "strength": "⚔",
@@ -151,7 +151,7 @@ class _QuestRow(QWidget):
         # Left glyph (stat icon or ✓ if done)
         glyph = QLabel("✓" if self._done else STAT_ICONS.get(q["stat"], "·"))
         glyph.setFixedWidth(18)
-        glyph.setFont(QFont("monospace", 11))
+        glyph.setFont(QFont("IM Fell English", 11))
         glyph.setStyleSheet(
             f"color: {C_GREEN if self._done else section_color};"
             "background: transparent;"
@@ -176,7 +176,7 @@ class _QuestRow(QWidget):
 
         # Stat tag
         stat_tag = QLabel(q["stat"][:3].upper())
-        stat_tag.setFont(QFont("monospace", 7, QFont.Weight.Bold))
+        stat_tag.setFont(QFont("Cinzel", 7, QFont.Weight.Bold))
         stat_tag.setFixedWidth(30)
         stat_tag.setAlignment(Qt.AlignmentFlag.AlignCenter)
         stat_tag.setStyleSheet(
@@ -185,7 +185,7 @@ class _QuestRow(QWidget):
 
         # Intensity dots
         dots = QLabel(INTENSITY_GLYPHS.get(q.get("intensity", 2), "··"))
-        dots.setFont(QFont("monospace", 11))
+        dots.setFont(QFont("IM Fell English", 11))
         dots.setFixedWidth(24)
         dots.setAlignment(Qt.AlignmentFlag.AlignCenter)
         dots.setStyleSheet(
@@ -195,7 +195,7 @@ class _QuestRow(QWidget):
 
         # XP reward
         xp_lbl = QLabel(f"+{q['xp_reward']}")
-        xp_lbl.setFont(QFont("monospace", 9, QFont.Weight.Bold))
+        xp_lbl.setFont(QFont("IM Fell English", 9, QFont.Weight.Bold))
         xp_lbl.setFixedWidth(44)
         xp_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         xp_lbl.setStyleSheet(
@@ -211,7 +211,7 @@ class _QuestRow(QWidget):
         # Complete button — only for non-life, non-done quests
         if q["type"] in ("daily", "weekly") and not self._done:
             btn = QPushButton("Mark Done")
-            btn.setFont(QFont("monospace", 8))
+            btn.setFont(QFont("Share Tech Mono", 8))
             btn.setFixedWidth(84)
             btn.setStyleSheet(f"""
                 QPushButton {{
@@ -225,17 +225,17 @@ class _QuestRow(QWidget):
                 QPushButton:hover {{
                     color: {C_GOLD_BRIGHT};
                     border-color: {C_GOLD};
-                    background: #1e1206;
+                    background: #d5cca8;
                 }}
                 QPushButton:pressed {{
-                    background: #2a1a08;
+                    background: #c0b488;
                 }}
             """)
             btn.clicked.connect(lambda: on_done and on_done(q["id"]))
             main.addWidget(btn)
         elif self._done:
             seal = QLabel("— sealed —")
-            seal.setFont(QFont("monospace", 8))
+            seal.setFont(QFont("Share Tech Mono", 8))
             seal.setFixedWidth(84)
             seal.setAlignment(Qt.AlignmentFlag.AlignCenter)
             seal.setStyleSheet(f"color: {C_INK_FAINT}; background: transparent;")
@@ -243,7 +243,7 @@ class _QuestRow(QWidget):
         else:
             # Life quest — no button, show ongoing indicator
             ongoing = QLabel("ongoing")
-            ongoing.setFont(QFont("monospace", 8))
+            ongoing.setFont(QFont("Share Tech Mono", 8))
             ongoing.setFixedWidth(84)
             ongoing.setAlignment(Qt.AlignmentFlag.AlignCenter)
             ongoing.setStyleSheet(f"color: {C_INK_FAINT}; background: transparent;")
@@ -253,7 +253,7 @@ class _QuestRow(QWidget):
 
         # ── Description sub-row ───────────────────────────────────────────────
         desc = QLabel(q["description"])
-        desc.setFont(QFont("monospace", 8))
+        desc.setFont(QFont("Share Tech Mono", 8))
         desc.setStyleSheet(
             f"color: {C_INK_FAINT}; background: transparent; padding-left: 28px;"
         )
@@ -312,17 +312,17 @@ class _Section(QWidget):
         glyph.setStyleSheet(f"color: {self._meta['color']}; background: transparent;")
 
         title = QLabel(self._meta["title"].upper())
-        title.setFont(QFont("monospace", 11, QFont.Weight.Bold))
+        title.setFont(QFont("Cinzel", 10, QFont.Weight.Bold))
         title.setStyleSheet(
             f"color: {self._meta['color']}; background: transparent; letter-spacing: 3px;"
         )
 
         sub = QLabel(self._meta["sub"])
-        sub.setFont(QFont("monospace", 8))
+        sub.setFont(QFont("Share Tech Mono", 8))
         sub.setStyleSheet(f"color: {C_INK_FAINT}; background: transparent;")
 
         self._count_lbl = QLabel("")
-        self._count_lbl.setFont(QFont("monospace", 8))
+        self._count_lbl.setFont(QFont("Share Tech Mono", 8))
         self._count_lbl.setStyleSheet(f"color: {C_INK_FAINT}; background: transparent;")
 
         hdr_row.addWidget(glyph)
@@ -347,8 +347,10 @@ class _Section(QWidget):
         self._rows.clear()
         while self._list_layout.count():
             item = self._list_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            if item is not None:
+                w = item.widget()
+                if w is not None:
+                    w.deleteLater()
 
         total = len(quests)
         done = sum(1 for q in quests if q.get("completed"))
@@ -361,7 +363,7 @@ class _Section(QWidget):
                 if self._type == "daily"
                 else "No oaths sworn yet."
             )
-            empty.setFont(QFont("monospace", 9))
+            empty.setFont(QFont("Share Tech Mono", 9))
             empty.setStyleSheet(
                 f"color: {C_INK_FAINT}; background: transparent; padding: 10px 28px;"
             )
@@ -402,7 +404,7 @@ class _LedgerHeader(QWidget):
 
         def col(text, width=None, align=Qt.AlignmentFlag.AlignLeft):
             l = QLabel(text)
-            l.setFont(QFont("monospace", 7, QFont.Weight.Bold))
+            l.setFont(QFont("Cinzel", 7, QFont.Weight.Bold))
             l.setStyleSheet(
                 f"color: {C_INK_FAINT}; background: transparent; letter-spacing: 2px;"
             )
@@ -445,20 +447,20 @@ class QuestTab(QWidget):
         title_row.setSpacing(12)
 
         page_title = QLabel("QUEST BOARD")
-        page_title.setFont(QFont("monospace", 14, QFont.Weight.Bold))
+        page_title.setFont(QFont("Cinzel", 13, QFont.Weight.Bold))
         page_title.setStyleSheet(
             f"color: {C_GOLD_BRIGHT}; background: transparent; letter-spacing: 4px;"
         )
 
         self._summary_lbl = QLabel("")
-        self._summary_lbl.setFont(QFont("monospace", 8))
+        self._summary_lbl.setFont(QFont("Share Tech Mono", 8))
         self._summary_lbl.setStyleSheet(
             f"color: {C_INK_FAINT}; background: transparent;"
         )
         self._summary_lbl.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
         refresh_btn = QPushButton("↻  Refresh")
-        refresh_btn.setFont(QFont("monospace", 8))
+        refresh_btn.setFont(QFont("Share Tech Mono", 8))
         refresh_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent; color: {C_INK_FAINT};

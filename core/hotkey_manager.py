@@ -36,7 +36,6 @@ class HotkeyManager(QThread):
         self._hotkey_str = self.DEFAULT_HOTKEY
         self._listener = None
         self._available = False
-        self.setDaemon(True)
 
     def set_hotkey(self, combo: str):
         """Set a new hotkey combo string e.g. '<ctrl>+<shift>+l'"""

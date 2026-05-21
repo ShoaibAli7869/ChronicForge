@@ -12,16 +12,16 @@ from PySide6.QtWidgets import QSizePolicy, QToolTip, QWidget
 
 # Activity level colours — dark parchment → burnished gold
 LEVEL_COLORS = [
-    "#1a1005",  # 0 — no activity
-    "#3a2808",  # 1 — light
-    "#7a5010",  # 2 — moderate
-    "#b08020",  # 3 — good
-    "#f5c842",  # 4 — excellent
+    "#ddd5b5",  # 0 — no activity (parchment blend)
+    "#c8b878",  # 1 — light (warm tan)
+    "#a08020",  # 2 — moderate (amber)
+    "#8b6010",  # 3 — good (deep amber)
+    "#8b1a1a",  # 4 — excellent (crimson)
 ]
 
-C_BG = "#0d0802"
-C_INK_FAINT = "#3a2810"
-C_BORDER = "#2a1a08"
+C_BG = "#e8e0cc"
+C_INK_FAINT = "#a89060"
+C_BORDER = "#c0b488"
 
 DAYS = ["M", "T", "W", "T", "F", "S", "S"]
 
@@ -76,7 +76,7 @@ class HeatmapWidget(QWidget):
         start = today - timedelta(weeks=17)
         start = start - timedelta(days=start.weekday())  # back to Monday
 
-        font7 = QFont("monospace", 7)
+        font7 = QFont("Share Tech Mono", 7)
         p.setFont(font7)
         p.setPen(QColor(C_INK_FAINT))
 

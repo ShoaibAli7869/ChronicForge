@@ -15,6 +15,16 @@ import os
 import sys
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Load .env from project root if present (no external dependency needed)
+_env_path = os.path.join(ROOT_DIR, ".env")
+if os.path.exists(_env_path):
+    with open(_env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith("#") and "=" in _line:
+                _k, _, _v = _line.partition("=")
+                os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
 ASSETS_DIR = os.path.join(ROOT_DIR, "assets", "sprites")
 sys.path.insert(0, ROOT_DIR)
 
@@ -103,8 +113,9 @@ from PySide6.QtWidgets import QApplication
 from core.activity_tracker import start_tracking, stop_tracking
 from core.backup import create_backup
 from core.database import init_db
-from core.game_logic import check_daily_login_bonus, get_character
+from core.game_logic import check_daily_login_bonus, get_character, sync_character_class
 from core.hotkey_manager import setup_hotkey, teardown_hotkey
+from core.monthly_recap import generate_monthly_recap, maybe_generate_recap
 from core.quest_system import (
     expire_old_daily_quests,
     generate_daily_quests,
@@ -144,8 +155,17 @@ class ChronicForgeApp:
         self.app.setApplicationName("ChronicForge")
         self.app.setQuitOnLastWindowClosed(False)
 
+        # ── Load medieval fonts ───────────────────────────────────────────────
+        self._load_fonts()
+
+        # ── Global parchment stylesheet (cascades to every widget) ────────────
+        from ui.theme import GLOBAL_STYLE
+
+        self.app.setStyleSheet(GLOBAL_STYLE)
+
         # ── Core init ─────────────────────────────────────────────────────────
         init_db()
+        sync_character_class()  # ensure class/title reflects current level+stats
         seed_life_quests()
         expire_old_daily_quests()  # FIX: expire stale daily quests on startup
 
@@ -238,6 +258,24 @@ class ChronicForgeApp:
 
         QTimer.singleShot(1200, self._startup)
 
+    @staticmethod
+    def _load_fonts():
+        """Load medieval fonts from ~/.local/share/fonts into Qt."""
+        import os as _os
+
+        from PySide6.QtGui import QFontDatabase
+
+        fonts_dir = _os.path.expanduser("~/.local/share/fonts")
+        if not _os.path.isdir(fonts_dir):
+            return
+        count = 0
+        for fname in _os.listdir(fonts_dir):
+            if fname.endswith(".ttf") or fname.endswith(".otf"):
+                QFontDatabase.addApplicationFont(_os.path.join(fonts_dir, fname))
+                count += 1
+        if count:
+            print(f"[ChronicForge] Loaded {count} custom fonts.")
+
     def _startup(self):
         char = get_character()
         name = char.get("name", "Hero")
@@ -312,6 +350,10 @@ class ChronicForgeApp:
             expire_old_daily_quests()
             self._worker.fetch_quests()
             QTimer.singleShot(2000, lambda: end_of_day_review())
+            # Monthly recap PDF on 1st of month
+            import threading as _t
+
+            _t.Thread(target=maybe_generate_recap, daemon=True).start()
 
         # 9pm streak check
         if hour == 21 and not self._streak_warn:

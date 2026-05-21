@@ -29,25 +29,25 @@ from ui.widgets.bar_chart import BarChart
 from ui.widgets.heatmap import HeatmapWidget
 from ui.widgets.xp_chart import XPChart
 
-C_BG = "#0d0802"
-C_SURFACE = "#110a03"
-C_RULE = "#2a1a08"
-C_RULE_GOLD = "#4a3010"
-C_GOLD = "#c8a020"
-C_GOLD_BRIGHT = "#f5c842"
-C_INK = "#d4b870"
-C_INK_DIM = "#7a5a30"
-C_INK_FAINT = "#3a2810"
-C_GREEN = "#50a030"
+C_BG = "#e8e0cc"
+C_SURFACE = "#ddd5b5"
+C_RULE = "#c0b488"
+C_RULE_GOLD = "#a89060"
+C_GOLD = "#c8820a"
+C_GOLD_BRIGHT = "#6b3a10"
+C_INK = "#3a2a18"
+C_INK_DIM = "#8a7050"
+C_INK_FAINT = "#a89060"
+C_GREEN = "#2a6a30"
 
 STAT_COLORS = {
-    "strength": "#c84040",
-    "intellect": "#4080d0",
-    "charisma": "#c07820",
-    "vitality": "#30a060",
-    "discipline": "#8050b0",
-    "creativity": "#a0a020",
-    "wealth": "#30a0a0",
+    "strength": "#8b2020",
+    "intellect": "#1a3a6a",
+    "charisma": "#8a6010",
+    "vitality": "#2a6a30",
+    "discipline": "#4a2860",
+    "creativity": "#5a6820",
+    "wealth": "#1a5a6a",
 }
 
 
@@ -81,7 +81,7 @@ class _Divider(QWidget):
 
 def _section_label(text: str) -> QLabel:
     l = QLabel(text)
-    l.setFont(QFont("monospace", 7, QFont.Weight.Bold))
+    l.setFont(QFont("Cinzel", 7, QFont.Weight.Bold))
     l.setStyleSheet(f"color:{C_INK_FAINT}; background:transparent; letter-spacing:4px;")
     return l
 
@@ -89,7 +89,7 @@ def _section_label(text: str) -> QLabel:
 def _period_btn(text: str) -> QPushButton:
     b = QPushButton(text)
     b.setCheckable(True)
-    b.setFont(QFont("monospace", 8))
+    b.setFont(QFont("Share Tech Mono", 8))
     b.setFixedWidth(48)
     b.setStyleSheet(f"""
         QPushButton {{
@@ -128,12 +128,12 @@ class ProgressTab(QWidget):
         # Page title + today summary
         title_row = QHBoxLayout()
         title = QLabel("CHRONICLES OF PROGRESS")
-        title.setFont(QFont("monospace", 14, QFont.Weight.Bold))
+        title.setFont(QFont("Cinzel", 13, QFont.Weight.Bold))
         title.setStyleSheet(
             f"color:{C_GOLD_BRIGHT}; background:transparent; letter-spacing:4px;"
         )
         self._today_lbl = QLabel("")
-        self._today_lbl.setFont(QFont("monospace", 8))
+        self._today_lbl.setFont(QFont("Share Tech Mono", 8))
         self._today_lbl.setStyleSheet(f"color:{C_INK_FAINT}; background:transparent;")
         title_row.addWidget(title)
         title_row.addSpacing(16)

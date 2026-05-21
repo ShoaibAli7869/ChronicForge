@@ -23,25 +23,25 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from ui.widgets.edit_entry_dialog import EditEntryDialog
 
 from core.game_logic import detect_stat, get_recent_logs, log_activity
 from core.roast_engine import get_roast
 from core.voice_input import VoiceRecorder, is_voice_available
+from ui.widgets.edit_entry_dialog import EditEntryDialog
 from utils.signals import event_bus
 
-C_BG = "#0d0802"
-C_SURFACE = "#110a03"
-C_RULE = "#2a1a08"
-C_RULE_GOLD = "#4a3010"
-C_GOLD = "#c8a020"
-C_GOLD_DIM = "#7a5c10"
-C_GOLD_BRIGHT = "#f5c842"
-C_INK = "#d4b870"
-C_INK_DIM = "#7a5a30"
-C_INK_FAINT = "#3a2810"
-C_GREEN = "#50a030"
-C_RED = "#b03020"
+C_BG = "#e8e0cc"
+C_SURFACE = "#ddd5b5"
+C_RULE = "#c0b488"
+C_RULE_GOLD = "#a89060"
+C_GOLD = "#c8820a"
+C_GOLD_DIM = "#a06808"
+C_GOLD_BRIGHT = "#6b3a10"
+C_INK = "#3a2a18"
+C_INK_DIM = "#8a7050"
+C_INK_FAINT = "#a89060"
+C_GREEN = "#2a6a30"
+C_RED = "#8b1a1a"
 
 STAT_ICONS = {
     "strength": "⚔",
@@ -53,13 +53,13 @@ STAT_ICONS = {
     "wealth": "⚖",
 }
 STAT_COLORS = {
-    "strength": "#c84040",
-    "intellect": "#4080d0",
-    "charisma": "#c07820",
-    "vitality": "#30a060",
-    "discipline": "#8050b0",
-    "creativity": "#a0a020",
-    "wealth": "#30a0a0",
+    "strength": "#8b2020",
+    "intellect": "#1a3a6a",
+    "charisma": "#8a6010",
+    "vitality": "#2a6a30",
+    "discipline": "#4a2860",
+    "creativity": "#5a6820",
+    "wealth": "#1a5a6a",
 }
 
 QUICK_CHIPS = [
@@ -144,12 +144,12 @@ class LogTab(QWidget):
         # Page title
         title_row = QHBoxLayout()
         page_title = QLabel("CHRONICLE ENTRY")
-        page_title.setFont(QFont("monospace", 14, QFont.Weight.Bold))
+        page_title.setFont(QFont("Cinzel", 13, QFont.Weight.Bold))
         page_title.setStyleSheet(
             f"color:{C_GOLD_BRIGHT}; background:transparent; letter-spacing:4px;"
         )
         self._today_lbl = QLabel("")
-        self._today_lbl.setFont(QFont("monospace", 8))
+        self._today_lbl.setFont(QFont("Share Tech Mono", 8))
         self._today_lbl.setStyleSheet(f"color:{C_INK_FAINT}; background:transparent;")
         title_row.addWidget(page_title)
         title_row.addSpacing(12)
@@ -162,7 +162,7 @@ class LogTab(QWidget):
 
         # ── Quick add runes ────────────────────────────────────────────────────
         rune_lbl = QLabel("QUICK ENTRY")
-        rune_lbl.setFont(QFont("monospace", 7, QFont.Weight.Bold))
+        rune_lbl.setFont(QFont("Cinzel", 7, QFont.Weight.Bold))
         rune_lbl.setStyleSheet(
             f"color:{C_INK_FAINT}; background:transparent; letter-spacing:3px;"
         )
@@ -174,7 +174,7 @@ class LogTab(QWidget):
         for label, text, stat in QUICK_CHIPS:
             col = STAT_COLORS.get(stat, C_GOLD_DIM)
             btn = QPushButton(label)
-            btn.setFont(QFont("monospace", 8))
+            btn.setFont(QFont("Share Tech Mono", 8))
             btn.setStyleSheet(f"""
                 QPushButton {{
                     background:transparent; color:{C_INK_FAINT};
@@ -195,7 +195,7 @@ class LogTab(QWidget):
 
         # ── Main entry form ────────────────────────────────────────────────────
         entry_lbl = QLabel("WHAT DID YOU DO?")
-        entry_lbl.setFont(QFont("monospace", 7, QFont.Weight.Bold))
+        entry_lbl.setFont(QFont("Cinzel", 7, QFont.Weight.Bold))
         entry_lbl.setStyleSheet(
             f"color:{C_INK_FAINT}; background:transparent; letter-spacing:3px;"
         )
@@ -206,7 +206,7 @@ class LogTab(QWidget):
         self._activity.setPlaceholderText(
             "Describe the deed. The chronicle remembers all."
         )
-        self._activity.setFont(QFont("monospace", 12))
+        self._activity.setFont(QFont("IM Fell English", 12))
         self._activity.setFixedHeight(42)
         self._activity.setStyleSheet(f"""
             QLineEdit {{
@@ -221,14 +221,14 @@ class LogTab(QWidget):
         root.addWidget(self._activity)
 
         self._detect_lbl = QLabel("")
-        self._detect_lbl.setFont(QFont("monospace", 8))
+        self._detect_lbl.setFont(QFont("Share Tech Mono", 8))
         self._detect_lbl.setStyleSheet(f"color:{C_INK_FAINT}; background:transparent;")
         root.addWidget(self._detect_lbl)
         root.addSpacing(12)
 
         # ── Intensity selector ─────────────────────────────────────────────────
         int_lbl = QLabel("INTENSITY")
-        int_lbl.setFont(QFont("monospace", 7, QFont.Weight.Bold))
+        int_lbl.setFont(QFont("Cinzel", 7, QFont.Weight.Bold))
         int_lbl.setStyleSheet(
             f"color:{C_INK_FAINT}; background:transparent; letter-spacing:3px;"
         )
@@ -241,9 +241,9 @@ class LogTab(QWidget):
         int_row.setSpacing(0)
 
         defs = [
-            (1, "·  LIGHT", "+30 XP   Light effort", "#2a5020", "#50a030"),
+            (1, "·  LIGHT", "+30 XP   Light effort", "#2a5020", "#2a6a30"),
             (2, "·· NORMAL", "+75 XP   Solid session", C_RULE_GOLD, C_GOLD),
-            (3, "··· INTENSE", "+150 XP  Max effort", "#4a1010", "#c04040"),
+            (3, "··· INTENSE", "+150 XP  Max effort", "#6a1818", "#c04040"),
         ]
         for val, label, sub, border, color in defs:
             w = QWidget()
@@ -255,7 +255,7 @@ class LogTab(QWidget):
             btn = QPushButton(label)
             btn.setCheckable(True)
             btn.setChecked(val == 2)
-            btn.setFont(QFont("monospace", 9, QFont.Weight.Bold))
+            btn.setFont(QFont("IM Fell English", 9, QFont.Weight.Bold))
             btn.setStyleSheet(f"""
                 QPushButton {{
                     background:transparent; color:{color};
@@ -267,7 +267,7 @@ class LogTab(QWidget):
             self._int_group.addButton(btn, val)
 
             sub_lbl = QLabel(sub)
-            sub_lbl.setFont(QFont("monospace", 7))
+            sub_lbl.setFont(QFont("Share Tech Mono", 7))
             sub_lbl.setStyleSheet(f"color:{C_INK_FAINT}; background:transparent;")
 
             wl.addWidget(btn)
@@ -285,12 +285,12 @@ class LogTab(QWidget):
             QLineEdit {{
                 background:transparent; color:{C_INK_DIM};
                 border:none; border-bottom:1px solid {C_RULE};
-                padding:0 4px; font-family:monospace; font-size:9px;
+                padding:0 4px; font-family: 'Share Tech Mono', monospace; font-size:9px;
             }}
             QLineEdit:focus {{ border-bottom-color:{C_RULE_GOLD}; }}
         """)
         self._submit_btn = QPushButton("✦  Record the Deed")
-        self._submit_btn.setFont(QFont("monospace", 10, QFont.Weight.Bold))
+        self._submit_btn.setFont(QFont("IM Fell English", 10, QFont.Weight.Bold))
         self._submit_btn.setFixedWidth(180)
         self._submit_btn.setStyleSheet(f"""
             QPushButton {{
@@ -298,7 +298,7 @@ class LogTab(QWidget):
                 border:1px solid {C_RULE_GOLD}; padding:9px 0;
                 letter-spacing:1px;
             }}
-            QPushButton:hover {{ background:#1e1206; border-color:{C_GOLD};
+            QPushButton:hover {{ background:#d5cca8; border-color:{C_GOLD};
                 color:{C_GOLD_BRIGHT}; }}
             QPushButton:disabled {{ color:{C_INK_FAINT}; border-color:{C_RULE}; }}
         """)
@@ -317,7 +317,7 @@ class LogTab(QWidget):
                 border:1px solid {C_RULE}; padding:0;
             }}
             QPushButton:checked {{ color:#c04040; border-color:#c04040;
-                background:#1e0808; }}
+                background:#d5cca8; }}
             QPushButton:hover {{ border-color:{C_RULE_GOLD}; color:{C_GOLD}; }}
         """)
         self._mic_btn.pressed.connect(self._start_voice)
@@ -333,7 +333,7 @@ class LogTab(QWidget):
         root.addLayout(bot)
 
         self._feedback = QLabel("")
-        self._feedback.setFont(QFont("monospace", 9))
+        self._feedback.setFont(QFont("Share Tech Mono", 9))
         self._feedback.setStyleSheet(f"background:transparent;")
         root.addWidget(self._feedback)
         root.addSpacing(16)
@@ -342,7 +342,7 @@ class LogTab(QWidget):
 
         # ── History ledger ─────────────────────────────────────────────────────
         hist_lbl = QLabel("PAST DEEDS")
-        hist_lbl.setFont(QFont("monospace", 7, QFont.Weight.Bold))
+        hist_lbl.setFont(QFont("Cinzel", 7, QFont.Weight.Bold))
         hist_lbl.setStyleSheet(
             f"color:{C_INK_FAINT}; background:transparent; letter-spacing:3px;"
         )
@@ -425,6 +425,14 @@ class LogTab(QWidget):
                     self._feedback.setStyleSheet(f"color:{C_GREEN}; background:transparent; font-weight:bold;")
         get_roast("activity_done", "praise", stat=stat, speak=True)
         event_bus.stats_updated.emit()
+        event_bus.quests_updated.emit()
+
+        # FIX 4: fire events for auto-completed quests
+        for aq in result.get("auto_quests", []):
+            event_bus.quest_complete.emit(aq["quest"])
+            if aq.get("levelled_up"):
+                event_bus.level_up.emit(aq["new_level"])
+
         self._load_history()
 
     def _on_whisper_loading(self):
@@ -519,14 +527,16 @@ class LogTab(QWidget):
 
         while self._hist_layout.count() > 1:
             item = self._hist_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            if item is not None:
+                w = item.widget()
+                if w is not None:
+                    w.deleteLater()
 
         logs = get_recent_logs(days=14)
         if not logs:
             e = QLabel("The past deeds ledger is empty.")
             e.setStyleSheet(
-                f"color:{C_INK_FAINT}; font-family:monospace; font-size:9px;"
+                f"color:{C_INK_FAINT}; font-family: 'Share Tech Mono', monospace; font-size:9px;"
             )
             self._hist_layout.insertWidget(0, e)
             return
@@ -543,7 +553,7 @@ class LogTab(QWidget):
                     sep.setStyleSheet(f"background:{C_RULE}; border:none;")
                     self._hist_layout.insertWidget(self._hist_layout.count() - 1, sep)
                 date_lbl = QLabel(entry["date"])
-                date_lbl.setFont(QFont("monospace", 7, QFont.Weight.Bold))
+                date_lbl.setFont(QFont("Cinzel", 7, QFont.Weight.Bold))
                 date_lbl.setStyleSheet(
                     f"color:{C_INK_FAINT}; background:transparent; "
                     f"letter-spacing:2px; padding:6px 0 2px 0;"
@@ -566,14 +576,20 @@ class LogTab(QWidget):
             act = QLabel(
                 entry["activity"][:70] + ("…" if len(entry["activity"]) > 70 else "")
             )
-            act.setFont(QFont("monospace", 9))
+            act.setFont(QFont("Share Tech Mono", 9))
             act.setStyleSheet(f"color:{C_INK_DIM}; background:transparent;")
             act.setSizePolicy(
                 QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
             )
+            # FIX 3: tooltip shows full text + notes
+            _notes = entry.get("notes", "")
+            _tip = entry["activity"]
+            if _notes:
+                _tip += f"\n\nNotes: {_notes}"
+            act.setToolTip(_tip)
 
             xp_lbl = QLabel(f"{icon} +{entry['xp']}")
-            xp_lbl.setFont(QFont("monospace", 8))
+            xp_lbl.setFont(QFont("Share Tech Mono", 8))
             xp_lbl.setStyleSheet(f"color:{col}; background:transparent;")
             xp_lbl.setFixedWidth(64)
             xp_lbl.setAlignment(
@@ -587,7 +603,7 @@ class LogTab(QWidget):
             # Edit button
             edit_btn = QPushButton("✎")
             edit_btn.setFixedSize(18, 18)
-            edit_btn.setFont(QFont("monospace", 9))
+            edit_btn.setFont(QFont("Share Tech Mono", 9))
             edit_btn.setStyleSheet(f"""
                 QPushButton {{ background:transparent; color:{C_INK_FAINT};
                     border:none; padding:0; }}
@@ -600,7 +616,7 @@ class LogTab(QWidget):
             # Delete button
             del_btn = QPushButton("✕")
             del_btn.setFixedSize(18, 18)
-            del_btn.setFont(QFont("monospace", 8))
+            del_btn.setFont(QFont("Share Tech Mono", 8))
             del_btn.setStyleSheet(f"""
                 QPushButton {{ background:transparent; color:{C_INK_FAINT};
                     border:none; padding:0; }}

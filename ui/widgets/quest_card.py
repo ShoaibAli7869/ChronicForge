@@ -17,14 +17,14 @@ STAT_ICONS = {
     "wealth": "💰",
 }
 TYPE_COLORS = {
-    "daily": "#c8a020",
-    "weekly": "#8050d0",
-    "life": "#d04020",
+    "daily": "#c8820a",
+    "weekly": "#4a2860",
+    "life": "#8b1a1a",
 }
 
 CARD_STYLE = """
 QWidget#QuestCard {{
-    background: #1a0f05;
+    background: #ddd5b5;
     border: 1px solid {border};
     border-radius: 8px;
     padding: 6px;
@@ -33,16 +33,16 @@ QWidget#QuestCard {{
 
 BTN_STYLE = """
 QPushButton {
-    background: #2a1a08;
-    color: #c8a020;
-    border: 1px solid #8b6010;
+    background: #c0b488;
+    color: #c8820a;
+    border: 1px solid #a89060;
     border-radius: 4px;
-    font-family: monospace;
+    font-family: 'Share Tech Mono', monospace;
     font-size: 10px;
     padding: 4px 10px;
 }
-QPushButton:hover { background: #3d2810; color: #f5c842; border-color: #c8a020; }
-QPushButton:pressed { background: #1a0f05; }
+QPushButton:hover { background: #d5cca8; color: #6b3a10; border-color: #c8820a; }
+QPushButton:pressed { background: #ddd5b5; }
 """
 
 
@@ -56,7 +56,7 @@ class QuestCard(QWidget):
 
     def _build(self):
         q = self._quest
-        border = TYPE_COLORS.get(q["type"], "#8b6010")
+        border = TYPE_COLORS.get(q["type"], "#a89060")
         icon = STAT_ICONS.get(q["stat"], "⚔")
 
         self.setObjectName("QuestCard")
@@ -79,19 +79,19 @@ class QuestCard(QWidget):
         text_col.setSpacing(2)
 
         title = QLabel(q["title"])
-        title.setFont(QFont("monospace", 10, QFont.Weight.Bold))
+        title.setFont(QFont("IM Fell English", 10, QFont.Weight.Bold))
         title.setStyleSheet(f"color: {border};")
 
         desc = QLabel(q["description"])
-        desc.setFont(QFont("monospace", 8))
-        desc.setStyleSheet("color: #a08060;")
+        desc.setFont(QFont("Share Tech Mono", 8))
+        desc.setStyleSheet("color: #6b5030;")
         desc.setWordWrap(True)
 
         meta = QLabel(
             f"{q['type'].upper()}  ·  {q['xp_reward']} XP  ·  {q['stat'].upper()}"
         )
-        meta.setFont(QFont("monospace", 7))
-        meta.setStyleSheet("color: #6a4a2a;")
+        meta.setFont(QFont("Share Tech Mono", 7))
+        meta.setStyleSheet("color: #8a7050;")
 
         text_col.addWidget(title)
         text_col.addWidget(desc)

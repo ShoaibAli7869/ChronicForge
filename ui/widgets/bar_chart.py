@@ -16,9 +16,9 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
-C_BG = "#0d0802"
-C_GRID = "#1a1005"
-C_INK_FAINT = "#3a2810"
+C_BG = "#e8e0cc"
+C_GRID = "#ccc4a0"
+C_INK_FAINT = "#a89060"
 
 
 class BarChart(QWidget):
@@ -63,7 +63,7 @@ class BarChart(QWidget):
         spacing = (chart_w - bar_w * n) // (n + 1)
 
         # Title
-        p.setFont(QFont("monospace", 7, QFont.Weight.Bold))
+        p.setFont(QFont("Cinzel", 7, QFont.Weight.Bold))
         p.setPen(QColor(C_INK_FAINT))
         p.drawText(
             QRectF(pad_l, 4, chart_w, 14), Qt.AlignmentFlag.AlignLeft, self._title
@@ -77,7 +77,7 @@ class BarChart(QWidget):
             bx = pad_l + spacing + i * (bar_w + spacing)
             bh = int((bar["value"] / max_v) * chart_h)
             by = pad_t + chart_h - bh
-            col = QColor(bar.get("color", "#c8a020"))
+            col = QColor(bar.get("color", "#c8820a"))
 
             # Bar fill with gradient
             if bh > 0:
@@ -99,7 +99,7 @@ class BarChart(QWidget):
                     if self._unit
                     else str(int(bar["value"]))
                 )
-                p.setFont(QFont("monospace", 7))
+                p.setFont(QFont("Share Tech Mono", 7))
                 p.setPen(QColor(col))
                 p.drawText(
                     QRectF(bx - 4, max(by - 16, pad_t), bar_w + 8, 14),
@@ -108,7 +108,7 @@ class BarChart(QWidget):
                 )
 
             # Label below bar
-            p.setFont(QFont("monospace", 7))
+            p.setFont(QFont("Share Tech Mono", 7))
             p.setPen(QColor(C_INK_FAINT))
             p.drawText(
                 QRectF(bx - 4, pad_t + chart_h + 4, bar_w + 8, 20),

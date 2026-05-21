@@ -44,7 +44,7 @@ class RadarChart(QWidget):
         angle_step = 2 * math.pi / num_stats
 
         # Draw grid (concentric polygons)
-        painter.setPen(QPen(QColor(80, 60, 40), 1))
+        painter.setPen(QPen(QColor(192, 180, 136), 1))
         for step in range(1, 6):
             r = radius * (step / 5.0)
             poly = QPolygonF()
@@ -56,19 +56,19 @@ class RadarChart(QWidget):
             painter.drawPolygon(poly)
 
         # Draw axes and labels
-        painter.setFont(QFont("monospace", 8))
+        painter.setFont(QFont("Share Tech Mono", 8))
         for i in range(num_stats):
             angle = i * angle_step - math.pi / 2.0
             x = center.x() + radius * math.cos(angle)
             y = center.y() + radius * math.sin(angle)
-            painter.setPen(QPen(QColor(80, 60, 40), 1))
+            painter.setPen(QPen(QColor(192, 180, 136), 1))
             painter.drawLine(center, QPointF(x, y))
 
             # Labels
             label = labels[i][:3].upper()
             lx = center.x() + (radius + 15) * math.cos(angle)
             ly = center.y() + (radius + 15) * math.sin(angle)
-            painter.setPen(QColor(200, 180, 140))
+            painter.setPen(QColor(58, 42, 24))
             # Rough centering
             painter.drawText(int(lx - 10), int(ly + 5), label)
 
@@ -82,12 +82,12 @@ class RadarChart(QWidget):
             y = center.y() + r * math.sin(angle)
             data_poly.append(QPointF(x, y))
 
-        painter.setPen(QPen(QColor(245, 200, 66), 2))
-        painter.setBrush(QBrush(QColor(245, 200, 66, 80)))
+        painter.setPen(QPen(QColor(139, 26, 26), 2))
+        painter.setBrush(QBrush(QColor(139, 26, 26, 60)))
         painter.drawPolygon(data_poly)
 
         # Draw points
-        painter.setBrush(QBrush(QColor(245, 200, 66)))
+        painter.setBrush(QBrush(QColor(139, 26, 26)))
         for point in data_poly:
             painter.drawEllipse(point, 3, 3)
 

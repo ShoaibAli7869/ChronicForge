@@ -506,3 +506,57 @@ def _quest_to_dict(q: Quest) -> dict:
         "failed": q.failed,
         "due": q.due_date,
     }
+
+
+def auto_complete_matching_quests(stat: str) -> list[dict]:
+    """
+    FIX 4: After logging an activity, auto-tick daily quests that target
+    the same stat AND are not yet complete.
+    Returns list of completed quest dicts so caller can fire events.
+    """
+    today = date.today().isoformat()
+    completed = []
+    with SessionFactory() as session:
+        matching = session.scalars(
+            select(Quest).where(
+                Quest.character_id == 1,
+                Quest.quest_type == "daily",
+                Quest.due_date == today,
+                Quest.completed == False,
+                Quest.failed == False,
+                Quest.stat_target == stat,
+            )
+        ).all()
+
+        char = session.get(Character, 1)
+        for q in matching:
+            q.completed = True
+            q.completed_at = datetime.utcnow()
+            char.xp += q.xp_reward
+
+            from core.game_logic import get_class, get_title, xp_for_level
+
+            levelled_up = False
+            while char.xp >= xp_for_level(char.level + 1):
+                char.level += 1
+                levelled_up = True
+            char.xp_to_next = xp_to_next_level(char.level)
+            char.char_class = get_class(char)
+            char.title = get_title(char)
+
+            completed.append(
+                {
+                    "quest": q.title,
+                    "xp_awarded": q.xp_reward,
+                    "levelled_up": levelled_up,
+                    "new_level": char.level if levelled_up else None,
+                }
+            )
+
+        if completed:
+            session.commit()
+            print(
+                f"[ChronicForge] Auto-completed {len(completed)} quest(s) for stat: {stat}"
+            )
+
+    return completed

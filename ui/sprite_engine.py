@@ -16,7 +16,7 @@ from datetime import datetime
 from enum import Enum, auto
 from typing import Callable, Optional
 
-from PySide6.QtCore import QObject, QPoint, QPointF, QRect, Qt, QTimer, Signal
+from PySide6.QtCore import QElapsedTimer, QObject, QPoint, QPointF, QRect, Qt, QTimer, Signal
 from PySide6.QtGui import (
     QBrush,
     QColor,
@@ -103,31 +103,32 @@ class AnimConfig:
 def build_anim_map(prefix: str) -> "dict[SpriteState, AnimConfig]":
     def a(name, fps, loop, pingpong=False):
         return AnimConfig(f"{prefix}-{name}.png", 0, fps, loop, pingpong)
+
     return {
-        SpriteState.IDLE:         a("idle",         8,  True),
-        SpriteState.IDLE_TURN:    a("idle_turn",     8,  False),
-        SpriteState.WALK:         a("walk",          10, True),
-        SpriteState.WALK_TURN:    a("walk_turn",     10, False),
-        SpriteState.RUN:          a("run",           14, True),
-        SpriteState.RUN_TURN:     a("run_turn",      12, False),
-        SpriteState.RUN_TO_IDLE:  a("run_to_idle",   10, False),
-        SpriteState.JUMP:         a("jump",          10, False),
-        SpriteState.FALL:         a("fall",          10, False),
-        SpriteState.FALL_LOOP:    a("fall_loop",     8,  True),
-        SpriteState.DASH:         a("dash",          16, False),
-        SpriteState.SLIDE:        a("slide",         10, False),
-        SpriteState.WALL_SLIDE:   a("wall_slide",    8,  True),
-        SpriteState.WALL_JUMP:    a("wall_jump",     10, False),
-        SpriteState.LEDGE_HANG:   a("ledge_hang",    6,  True),
-        SpriteState.LEDGE_CLIMB:  a("ledge_climb",   10, False),
-        SpriteState.HURT:         a("hurt",          10, False),
-        SpriteState.DEATH:        a("death",         8,  False),
-        SpriteState.COMBO_1:      a("combo_1",       13, False),
-        SpriteState.COMBO_1_END:  a("combo_1_end",   11, False),
-        SpriteState.COMBO_2:      a("combo_2",       13, False),
-        SpriteState.COMBO_2_END:  a("combo_2_end",   11, False),
-        SpriteState.COMBO_3:      a("combo_3",       13, False),
-        SpriteState.COMBO_3_END:  a("combo_3_end",   11, False),
+        SpriteState.IDLE: a("idle", 8, True),
+        SpriteState.IDLE_TURN: a("idle_turn", 8, False),
+        SpriteState.WALK: a("walk", 10, True),
+        SpriteState.WALK_TURN: a("walk_turn", 10, False),
+        SpriteState.RUN: a("run", 14, True),
+        SpriteState.RUN_TURN: a("run_turn", 12, False),
+        SpriteState.RUN_TO_IDLE: a("run_to_idle", 10, False),
+        SpriteState.JUMP: a("jump", 10, False),
+        SpriteState.FALL: a("fall", 10, False),
+        SpriteState.FALL_LOOP: a("fall_loop", 8, True),
+        SpriteState.DASH: a("dash", 16, False),
+        SpriteState.SLIDE: a("slide", 10, False),
+        SpriteState.WALL_SLIDE: a("wall_slide", 8, True),
+        SpriteState.WALL_JUMP: a("wall_jump", 10, False),
+        SpriteState.LEDGE_HANG: a("ledge_hang", 6, True),
+        SpriteState.LEDGE_CLIMB: a("ledge_climb", 10, False),
+        SpriteState.HURT: a("hurt", 10, False),
+        SpriteState.DEATH: a("death", 8, False),
+        SpriteState.COMBO_1: a("combo_1", 13, False),
+        SpriteState.COMBO_1_END: a("combo_1_end", 11, False),
+        SpriteState.COMBO_2: a("combo_2", 13, False),
+        SpriteState.COMBO_2_END: a("combo_2_end", 11, False),
+        SpriteState.COMBO_3: a("combo_3", 13, False),
+        SpriteState.COMBO_3_END: a("combo_3_end", 11, False),
     }
 
 
@@ -270,6 +271,7 @@ class SpriteWidget(QWidget):
         self._open_log_fn = open_log_fn
         self._sheets: dict[SpriteState, QPixmap] = {}
         from config.settings import load_config
+
         self._anim_map = build_anim_map(load_config().sprite.character)
 
         self._state = SpriteState.IDLE
@@ -314,6 +316,10 @@ class SpriteWidget(QWidget):
         self.setFixedSize(FRAME_SIZE * self._scale, FRAME_SIZE * self._scale)
 
         self._load_sheets()
+
+        # Elapsed-time clock for frame-rate-independent physics
+        self._phys_clock = QElapsedTimer()
+        self._phys_clock.start()
 
         # 60fps master loop
         self._loop = QTimer(self)
@@ -419,6 +425,11 @@ class SpriteWidget(QWidget):
     # ── 60fps physics tick ────────────────────────────────────────────────────
 
     def _tick(self):
+        # Use actual elapsed time so physics are smooth even when the timer fires
+        # late (Qt timers are not guaranteed to be exactly 16 ms).
+        elapsed_ms = self._phys_clock.restart()
+        dt = min(elapsed_ms / 1000.0, 0.05)  # cap at 50ms to prevent tunnelling on lag
+
         if self._dragging:
             self.update()
             return
@@ -431,7 +442,7 @@ class SpriteWidget(QWidget):
         # Horizontal movement
         if self._target_x is not None and self._state not in LOCKED:
             diff = self._target_x - self._px
-            speed = (RUN_SPEED if self._move_mode == "run" else WALK_SPEED) * DT
+            speed = (RUN_SPEED if self._move_mode == "run" else WALK_SPEED) * dt
 
             if abs(diff) <= speed + 1:
                 self._px = self._target_x
@@ -466,8 +477,8 @@ class SpriteWidget(QWidget):
 
         # Gravity
         if not self._on_floor or self._vy < 0:
-            self._vy += GRAVITY * DT
-            self._py += self._vy * DT
+            self._vy += GRAVITY * dt
+            self._py += self._vy * dt
             if self._py >= self._floor_y:
                 self._py = self._floor_y
                 self._vy = -self._vy * BOUNCE_DAMP if abs(self._vy) > 80 else 0.0
@@ -495,7 +506,10 @@ class SpriteWidget(QWidget):
             self._glow_alpha = max(0, self._glow_alpha - 5)
 
         self.move(int(self._px), int(self._py))
-        self.update()
+        # move() schedules a repaint automatically; call update() only when
+        # position did not change so glow/bubble changes still get painted.
+        if self._glow_alpha > 0 or self._bubble_text:
+            self.update()
 
     # ── Rendering ─────────────────────────────────────────────────────────────
 
@@ -736,7 +750,10 @@ class SpriteWidget(QWidget):
         menu.addSeparator()
         menu.addAction("📌  Snap to floor").triggered.connect(self._snap_floor)
         menu.addAction("🎬  Test Animations").triggered.connect(self._test_animations)
-        menu.addAction("⚡  Switch Character [DEV]").triggered.connect(self._dev_toggle_character)
+        menu.addAction("⚡  Switch Character [DEV]").triggered.connect(
+            self._dev_toggle_character
+        )
+        menu.addAction("⭐  +500 XP [DEV]").triggered.connect(self._dev_add_xp)
         menu.addSeparator()
         menu.addAction("✕  Quit ChronicForge").triggered.connect(QApplication.quit)
         menu.exec(e.globalPos())
@@ -772,6 +789,7 @@ class SpriteWidget(QWidget):
 
     def _dev_toggle_character(self):
         from config.settings import load_config, save_config
+
         cfg = load_config()
         cfg.sprite.character = (
             "female_hero" if cfg.sprite.character == "male_hero" else "male_hero"
@@ -782,6 +800,44 @@ class SpriteWidget(QWidget):
         self._sheets.clear()
         self._load_sheets()
         self._apply(SpriteState.IDLE)
+
+    def _dev_add_xp(self):
+        """Give 500 XP for testing class progression."""
+        from core.database import Character, SessionFactory
+        from core.game_logic import (
+            get_class,
+            get_title,
+            xp_for_level,
+            xp_to_next_level,
+        )
+
+        with SessionFactory() as session:
+            char = session.get(Character, 1)
+            if not char:
+                return
+
+            char.xp += 500
+
+            levelled_up = False
+            while char.xp >= xp_for_level(char.level + 1):
+                char.level += 1
+                levelled_up = True
+
+            char.xp_to_next = xp_to_next_level(char.level)
+            old_class = char.char_class
+            char.char_class = get_class(char)
+            char.title = get_title(char)
+            session.commit()
+
+            event_bus.xp_gained.emit(500)
+            if levelled_up:
+                event_bus.level_up.emit(char.level)
+            event_bus.stats_updated.emit()
+
+            if char.char_class != old_class:
+                self._show_bubble(f"CLASS CHANGE: {old_class} \u2192 {char.char_class}")
+            else:
+                self._show_bubble(f"+500 XP | Lv{char.level} {char.char_class}")
 
     def _test_animations(self):
         """
@@ -799,7 +855,7 @@ class SpriteWidget(QWidget):
             QMenu::separator { height:1px; background:#2a1808; margin:2px 8px; }
         """)
 
-        # Add all animations from self._anim_map
+        # Add all animations from SpriteState enum
         for state in sorted(SpriteState, key=lambda s: s.name):
             anim_menu.addAction(state.name).triggered.connect(
                 lambda checked=False, s=state: self._trigger_anim(s)
@@ -820,4 +876,3 @@ class SpriteWidget(QWidget):
         self._py = self._floor_y
         self._vy = 0.0
         self._on_floor = True
-

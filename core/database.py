@@ -88,6 +88,9 @@ class Character(Base):
     roasts: Mapped[List["Roast"]] = relationship(
         back_populates="character", cascade="all, delete-orphan"
     )
+    journal_entries: Mapped[List["JournalEntry"]] = relationship(
+        back_populates="character", cascade="all, delete-orphan"
+    )
 
     @property
     def stats_dict(self) -> dict:
@@ -178,6 +181,32 @@ class Roast(Base):
     trigger: Mapped[str] = mapped_column(String(64))  # what triggered it
     source: Mapped[str] = mapped_column(String(16), default="template")  # template/groq
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class JournalEntry(Base):
+    """Long-form reflective journal entry — separate from quick activity logs."""
+
+    __tablename__ = "journal_entries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("character.id"))
+    character: Mapped["Character"] = relationship(back_populates="journal_entries")
+
+    date: Mapped[str] = mapped_column(String(10))  # YYYY-MM-DD
+    title: Mapped[str] = mapped_column(String(256))
+    body: Mapped[str] = mapped_column(Text)
+    mood: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    # moods: terrible / bad / okay / good / amazing
+    tags: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # JSON-encoded list of tag strings, e.g. '["gym","reading"]'
+    word_count: Mapped[int] = mapped_column(Integer, default=0)
+    prompt_used: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # The prompt text that inspired this entry (if any)
+    xp_awarded: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
 
 # ── Engine & session factory ──────────────────────────────────────────────────

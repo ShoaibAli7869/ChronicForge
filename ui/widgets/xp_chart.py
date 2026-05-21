@@ -17,11 +17,11 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
-C_BG = "#0d0802"
-C_GOLD = "#c8a020"
-C_GOLD_DIM = "#4a3010"
-C_INK_FAINT = "#3a2810"
-C_GRID = "#1a1005"
+C_BG = "#e8e0cc"
+C_GOLD = "#c8820a"
+C_GOLD_DIM = "#a89060"
+C_INK_FAINT = "#a89060"
+C_GRID = "#ccc4a0"
 
 
 class XPChart(QWidget):
@@ -72,7 +72,7 @@ class XPChart(QWidget):
             p.drawLine(QPointF(pad_l, gy), QPointF(W - pad_r, gy))
 
         # ── Y-axis labels ─────────────────────────────────────────────────────
-        font = QFont("monospace", 7)
+        font = QFont("Share Tech Mono", 7)
         p.setFont(font)
         p.setPen(QColor(C_INK_FAINT))
         fm = QFontMetrics(font)
@@ -131,7 +131,7 @@ class XPChart(QWidget):
 
         # ── Chart label ───────────────────────────────────────────────────────
         p.setPen(QColor(C_INK_FAINT))
-        p.setFont(QFont("monospace", 7, QFont.Weight.Bold))
+        p.setFont(QFont("Cinzel", 7, QFont.Weight.Bold))
         p.drawText(
             QRectF(pad_l, 4, chart_w, 16), Qt.AlignmentFlag.AlignLeft, self._label
         )

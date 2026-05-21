@@ -166,119 +166,248 @@ STREAK_LINES = {
 # ══════════════════════════════════════════════════════════════════════════════
 
 
+# ── TTS playback lock (prevents overlapping speech) ──────────────────────────
+_TTS_LOCK = threading.Lock()
+
+
+def _add_silence_padding(input_path: str, output_path: str, pre_ms: int = 400) -> bool:
+    """
+    Pad audio with silence at the start using ffmpeg.
+    Fixes the Linux audio-cutoff problem where the sound system
+    drops the first ~200-400ms while waking up.
+    """
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-i",
+                input_path,
+                "-af",
+                f"adelay={pre_ms}:all=1",
+                output_path,
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=15,
+        )
+        return result.returncode == 0
+    except FileNotFoundError:
+        print(
+            "[Soldier Boy TTS] ffmpeg not found — install ffmpeg (sudo apt install ffmpeg)"
+        )
+        return False
+    except Exception as exc:
+        print(f"[Soldier Boy TTS] Silence pad error: {exc}")
+        return False
+
+
+def _play_audio_bytes(audio_bytes: bytes, ext: str) -> bool:
+    """
+    Write TTS audio to temp file, add silence pre-roll, play via ffplay.
+
+    The silence pre-roll (400ms) prevents audio cutoff on Linux where
+    the sound system drops the first few hundred milliseconds while
+    waking from power-save / initialising the output stream.
+
+    Uses subprocess.DEVNULL instead of capture_output to avoid pipe
+    buffer deadlocks with ffplay's verbose stderr.
+    """
+    import subprocess
+    import tempfile
+
+    tmp_raw: Optional[str] = None
+    tmp_padded: Optional[str] = None
+
+    try:
+        # 1 — Write raw TTS audio to temp file
+        with tempfile.NamedTemporaryFile(suffix=f".{ext}", delete=False) as f:
+            f.write(audio_bytes)
+            tmp_raw = f.name
+
+        # 2 — Create padded version with silence pre-roll
+        tmp_padded = tmp_raw + "_padded" + os.path.splitext(tmp_raw)[1]
+        if _add_silence_padding(tmp_raw, tmp_padded):
+            play_path = tmp_padded
+        else:
+            # Padding failed — play raw audio (still better than nothing)
+            play_path = tmp_raw
+            print("[Soldier Boy TTS] Playing without pre-roll (padding failed)")
+
+        # 3 — Play via ffplay (blocking, no pipe capture)
+        subprocess.run(
+            [
+                "ffplay",
+                "-nodisp",
+                "-autoexit",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                play_path,
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=60,
+        )
+        print("[Soldier Boy TTS] Playback finished.")
+        return True
+
+    except FileNotFoundError:
+        print(
+            "[Soldier Boy TTS] ffplay not found — "
+            "install ffmpeg (sudo apt install ffmpeg)"
+        )
+        return False
+    except subprocess.TimeoutExpired:
+        print("[Soldier Boy TTS] Playback timed out (60s)")
+        return False
+    except Exception as exc:
+        print(f"[Soldier Boy TTS] Playback error: {exc}")
+        return False
+    finally:
+        # Clean up temp files
+        for p in (tmp_raw, tmp_padded):
+            if p:
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
+
+
 def _speak_soldier_boy(text: str, on_ready: Optional[Callable[[str], None]] = None):
     """
-    Generate and play voice audio in a background thread.
-    on_ready(text) fires when audio is loaded and about to play —
-    sprite bubble appears exactly when speech starts.
+    Generate TTS audio (Cartesia → ElevenLabs fallback) and play it.
+
+    Runs with _TTS_LOCK held so overlapping calls queue up instead of
+    talking over each other.  on_ready(text) fires just before playback
+    starts so the sprite bubble syncs with audio.
     """
-    cartesia_key = os.environ.get("CARTESIA_API_KEY", "")
-    cartesia_voice = os.environ.get(
-        "CARTESIA_VOICE_ID", "dded70d9-73b5-4c77-b76c-97e3c86a6705"
-    )
-    eleven_key = os.environ.get("ELEVENLABS_API_KEY", "")
-    eleven_voice = os.environ.get("ELEVENLABS_VOICE_ID", "pNInz6obbfDQGcgMyIGb")
+    import requests
 
-    # Ellipsis prefix → natural breath before speech (prevents abrupt TTS start)
-    tts_text = f"... {text}"
-    audio_data = None
+    # ── Acquire lock so we don't overlap speech ───────────────────────────
+    if not _TTS_LOCK.acquire(blocking=False):
+        print("[Soldier Boy TTS] Busy — skipping: " + text[:60])
+        return
 
-    # ── Cartesia ──────────────────────────────────────────────────────────────
-    if cartesia_key:
-        try:
-            import requests
+    try:
+        # ── Read keys from env ────────────────────────────────────────────
+        cartesia_key = os.environ.get("CARTESIA_API_KEY", "").strip()
+        cartesia_voice = os.environ.get(
+            "CARTESIA_VOICE_ID", "dded70d9-73b5-4c77-b76c-97e3c86a6705"
+        ).strip()
+        cartesia_version = os.environ.get("CARTESIA_VERSION", "2024-11-13").strip()
+        eleven_key = os.environ.get("ELEVENLABS_API_KEY", "").strip()
+        eleven_voice = os.environ.get(
+            "ELEVENLABS_VOICE_ID", "pNInz6obbfDQGcgMyIGb"
+        ).strip()
 
-            print(f"[Soldier Boy TTS] Cartesia...")
-            resp = requests.post(
-                "https://api.cartesia.ai/tts/bytes",
-                headers={
-                    "Cartesia-Version": "2024-06-10",
-                    "X-API-Key": cartesia_key,
-                    "Content-Type": "application/json",
+        audio_bytes: Optional[bytes] = None
+        audio_ext = "wav"
+
+        # ── Cartesia (primary) ────────────────────────────────────────────
+        if cartesia_key:
+            print(f'[Soldier Boy TTS] Cartesia → "{text[:50]}…"')
+
+            payload = {
+                "transcript": text,
+                "voice": {"mode": "id", "id": cartesia_voice},
+                "output_format": {
+                    "container": "wav",
+                    "encoding": "pcm_s16le",
+                    "sample_rate": 44100,
                 },
-                json={
-                    "model_id": "sonic-english",
-                    "transcript": tts_text,
-                    "voice": {"mode": "id", "id": cartesia_voice},
-                    "output_format": {
-                        "container": "wav",
-                        "encoding": "pcm_s16le",
-                        "sample_rate": 44100,
+                "language": "en",
+                "model_id": "sonic-2",
+            }
+
+            # Try Bearer auth first, then X-API-Key (legacy)
+            for auth_headers in (
+                {"Authorization": f"Bearer {cartesia_key}"},
+                {"X-API-Key": cartesia_key},
+            ):
+                try:
+                    resp = requests.post(
+                        "https://api.cartesia.ai/tts/bytes",
+                        headers={
+                            "Cartesia-Version": cartesia_version,
+                            "Content-Type": "application/json",
+                            **auth_headers,
+                        },
+                        json=payload,
+                        timeout=20,
+                    )
+                except requests.RequestException as exc:
+                    print(f"[Soldier Boy TTS] Cartesia network: {exc}")
+                    continue
+
+                if resp.status_code == 200 and resp.content:
+                    audio_bytes = resp.content
+                    auth_name = next(iter(auth_headers.keys()))
+                    print(
+                        f"[Soldier Boy TTS] Cartesia OK "
+                        f"({auth_name}, {len(resp.content)}B)"
+                    )
+                    break
+
+                detail = resp.text[:160] if resp.text else "(empty body)"
+                print(f"[Soldier Boy TTS] Cartesia {resp.status_code}: {detail}")
+
+                # 401 → key is bad, other auth scheme won't help
+                if resp.status_code == 401:
+                    break
+
+            if audio_bytes is None:
+                print("[Soldier Boy TTS] Cartesia failed — falling back.")
+        elif not eleven_key:
+            print("[Soldier Boy TTS] No API keys — silent mode.")
+
+        # ── ElevenLabs fallback ───────────────────────────────────────────
+        if audio_bytes is None and eleven_key:
+            print("[Soldier Boy TTS] Trying ElevenLabs…")
+            try:
+                resp = requests.post(
+                    f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}",
+                    headers={
+                        "Accept": "audio/mpeg",
+                        "Content-Type": "application/json",
+                        "xi-api-key": eleven_key,
                     },
-                },
-                timeout=10,
-            )
-            if resp.status_code == 200:
-                import io
-
-                from pydub import AudioSegment
-
-                audio_data = AudioSegment.from_file(
-                    io.BytesIO(resp.content), format="wav"
+                    json={
+                        "text": text,
+                        "model_id": "eleven_multilingual_v2",
+                        "voice_settings": {
+                            "stability": 0.5,
+                            "similarity_boost": 0.75,
+                        },
+                    },
+                    timeout=15,
                 )
-                print(f"[Soldier Boy TTS] Cartesia OK.")
-            else:
-                print(
-                    f"[Soldier Boy TTS] Cartesia {resp.status_code}: {resp.text[:80]}"
-                )
-        except Exception as exc:
-            print(f"[Soldier Boy TTS] Cartesia exception: {exc}")
+                if resp.status_code == 200 and resp.content:
+                    audio_bytes = resp.content
+                    audio_ext = "mp3"
+                    print(f"[Soldier Boy TTS] ElevenLabs OK ({len(resp.content)}B)")
+                else:
+                    detail = resp.text[:160] if resp.text else "(empty)"
+                    print(f"[Soldier Boy TTS] ElevenLabs {resp.status_code}: {detail}")
+            except Exception as exc:
+                print(f"[Soldier Boy TTS] ElevenLabs exception: {exc}")
 
-    # ── ElevenLabs fallback ───────────────────────────────────────────────────
-    if audio_data is None and eleven_key:
-        try:
-            import requests
+        # ── Playback ──────────────────────────────────────────────────────
+        if audio_bytes:
+            # Fire bubble callback just before audio starts
+            if on_ready:
+                on_ready(text)
+            _play_audio_bytes(audio_bytes, audio_ext)
+        else:
+            # No audio — still show bubble, just silent
+            if on_ready:
+                on_ready(text)
+            print(f"[Soldier Boy] (silent) {text}")
 
-            print(f"[Soldier Boy TTS] ElevenLabs fallback...")
-            resp = requests.post(
-                f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}",
-                headers={
-                    "Accept": "audio/mpeg",
-                    "Content-Type": "application/json",
-                    "xi-api-key": eleven_key,
-                },
-                json={
-                    "text": tts_text,
-                    "model_id": "eleven_monolingual_v1",
-                    "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
-                },
-                timeout=10,
-            )
-            if resp.status_code == 200:
-                import io
-
-                from pydub import AudioSegment
-
-                audio_data = AudioSegment.from_file(
-                    io.BytesIO(resp.content), format="mp3"
-                )
-                print(f"[Soldier Boy TTS] ElevenLabs OK.")
-            else:
-                print(
-                    f"[Soldier Boy TTS] ElevenLabs {resp.status_code}: {resp.text[:80]}"
-                )
-        except Exception as exc:
-            print(f"[Soldier Boy TTS] ElevenLabs exception: {exc}")
-
-    # ── Playback ──────────────────────────────────────────────────────────────
-    if audio_data is not None:
-        # Fire sprite bubble BEFORE playback so text appears as speech starts
-        if on_ready:
-            on_ready(text)
-        try:
-            from pydub import AudioSegment
-            from pydub.playback import play
-
-            # 300ms silence → prevents BT headphone clip on driver wake
-            play(AudioSegment.silent(duration=300) + audio_data)
-            print(f"[Soldier Boy TTS] Finished.")
-        except Exception as exc:
-            print(f"[Soldier Boy TTS] Playback error: {exc}")
-    else:
-        # No audio — still show the bubble
-        if on_ready:
-            on_ready(text)
-        print(f"[Soldier Boy] (silent) {text}")
+    finally:
+        _TTS_LOCK.release()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -348,7 +477,7 @@ No quotes. No preamble. Just the line."""
         model_name = "llama-3.3-70b-versatile"
 
     try:
-        resp = _groq_client.chat.completions.create(
+        resp = client.chat.completions.create(
             model=model_name,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=75,
@@ -357,7 +486,10 @@ No quotes. No preamble. Just the line."""
             frequency_penalty=0.7,
             presence_penalty=0.6,
         )
-        text = resp.choices[0].message.content.strip().strip("\"'")
+        raw = resp.choices[0].message.content
+        if not raw:
+            return None
+        text = raw.strip().strip("\"'")
         return text if len(text) > 8 else None
     except Exception as exc:
         print(f"[ChronicForge] Groq error: {exc}")
@@ -516,7 +648,7 @@ def end_of_day_review() -> Optional[str]:
         from core.game_logic import get_recent_logs
 
         today_logs = [
-            l for l in get_recent_logs(1) if l["date"] == date.today().isoformat()
+            e for e in get_recent_logs(1) if e["date"] == date.today().isoformat()
         ]
     except Exception:
         pass
@@ -524,7 +656,7 @@ def end_of_day_review() -> Optional[str]:
     if not today_logs:
         return get_roast("end_of_day", "roast", use_groq=True, speak=True)
 
-    stats_done = list({l["stat"] for l in today_logs})
+    stats_done = list({e["stat"] for e in today_logs})
     return get_roast(
         "end_of_day",
         "praise",

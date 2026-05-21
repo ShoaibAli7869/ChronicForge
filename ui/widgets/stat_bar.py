@@ -16,13 +16,13 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import QWidget
 
 STAT_COLORS = {
-    "strength": ("#dc4646", "#ff8080"),
-    "intellect": ("#3a7dd4", "#80b8ff"),
-    "charisma": ("#d47820", "#ffb860"),
-    "vitality": ("#34b870", "#80ffb0"),
-    "discipline": ("#a040cc", "#cc80ff"),
-    "creativity": ("#c8c020", "#ffee60"),
-    "wealth": ("#30b8b8", "#80eeff"),
+    "strength": ("#8b2020", "#c04040"),
+    "intellect": ("#1a3a6a", "#4a7aba"),
+    "charisma": ("#8a6010", "#c89030"),
+    "vitality": ("#2a6a30", "#50a070"),
+    "discipline": ("#4a2a7a", "#7a50b0"),
+    "creativity": ("#5a6820", "#8a9840"),
+    "wealth": ("#1a5a6a", "#40a0b0"),
 }
 
 
@@ -79,7 +79,7 @@ class StatBar(QWidget):
         bar_y = (h - bar_h) // 2
 
         # Label
-        font = QFont("monospace", 8, QFont.Weight.Bold)
+        font = QFont("Cinzel", 8, QFont.Weight.Bold)
         p.setFont(font)
         col1, col2 = STAT_COLORS.get(self._stat, ("#aaa", "#ccc"))
         p.setPen(QColor(col1))
@@ -88,8 +88,8 @@ class StatBar(QWidget):
         )
 
         # Track
-        p.setBrush(QBrush(QColor(30, 18, 8)))
-        p.setPen(QPen(QColor(60, 40, 15), 1))
+        p.setBrush(QBrush(QColor(204, 196, 160)))
+        p.setPen(QPen(QColor(168, 144, 96), 1))
         p.drawRoundedRect(bar_x, bar_y, bar_w, bar_h, 4, 4)
 
         # Fill
@@ -103,8 +103,8 @@ class StatBar(QWidget):
             p.drawRoundedRect(bar_x, bar_y, fill_w, bar_h, 4, 4)
 
         # Value text
-        p.setPen(QColor(220, 200, 140))
-        p.setFont(QFont("monospace", 8))
+        p.setPen(QColor(58, 42, 24))
+        p.setFont(QFont("Share Tech Mono", 8))
         p.drawText(
             bar_x + bar_w + 6,
             0,
@@ -163,29 +163,29 @@ class XPBar(QWidget):
         bar_y = (h - bar_h) // 2
 
         # Track
-        p.setBrush(QBrush(QColor(20, 12, 5)))
-        p.setPen(QPen(QColor(80, 60, 20), 1))
+        p.setBrush(QBrush(QColor(204, 196, 160)))
+        p.setPen(QPen(QColor(168, 144, 96), 1))
         p.drawRoundedRect(0, bar_y, w, bar_h, 4, 4)
 
         # Fill (golden gradient)
         fill_w = int(w * max(0, self._anim_pct))
         if fill_w > 2:
             grad = QLinearGradient(0, 0, w, 0)
-            grad.setColorAt(0.0, QColor("#8b5e10"))
-            grad.setColorAt(0.5, QColor("#d4a017"))
-            grad.setColorAt(1.0, QColor("#f5c842"))
+            grad.setColorAt(0.0, QColor("#8b1a1a"))
+            grad.setColorAt(0.5, QColor("#a82020"))
+            grad.setColorAt(1.0, QColor("#6b3a10"))
             p.setBrush(QBrush(grad))
             p.setPen(Qt.PenStyle.NoPen)
             p.drawRoundedRect(0, bar_y, fill_w, bar_h, 4, 4)
 
             # Shimmer highlight
-            p.setBrush(QBrush(QColor(255, 255, 200, 40)))
+            p.setBrush(QBrush(QColor(255, 255, 240, 60)))
             p.drawRoundedRect(0, bar_y, fill_w, bar_h // 2, 4, 4)
 
         # XP text overlay
-        font = QFont("monospace", 7)
+        font = QFont("Share Tech Mono", 7)
         p.setFont(font)
-        p.setPen(QColor(240, 210, 130))
+        p.setPen(QColor(58, 42, 24))
         pct_text = f"LV{self._level}  {int(self._anim_pct * 100)}%  {self._xp}/{self._xp_next} XP"
         p.drawText(0, 0, w, h, Qt.AlignmentFlag.AlignCenter, pct_text)
         p.end()
