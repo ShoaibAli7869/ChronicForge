@@ -69,6 +69,19 @@ def test_locomotion_strips(name, expected_w):
 
 
 @pytest.mark.parametrize("name,expected_w", [
+    ("dash",  640),
+    ("slide", 1024),
+    ("hurt",  768),
+    ("death", 2944),
+])
+def test_action_strips(name, expected_w):
+    path = SPRITES / f"female_hero-{name}.png"
+    assert path.exists(), f"{path.name} not found"
+    img = PILImage.open(path)
+    assert img.size == (expected_w, 128), f"{path.name}: expected {expected_w}x128, got {img.size}"
+
+
+@pytest.mark.parametrize("name,expected_w", [
     ("jump",      768),
     ("fall",      512),
     ("fall_loop", 384),

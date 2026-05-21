@@ -206,6 +206,84 @@ def gen_run() -> None:
     save_strip(frames, 'run')
 
 
+def gen_dash() -> None:
+    """5-frame dash: extreme forward lean, legs extended back."""
+    poses = [
+        {'body_lean':  2, 'body_y': -1, 'l_leg_x': -2, 'r_leg_x': +2},
+        {'body_lean':  5, 'body_y': -2, 'l_leg_x': -4, 'r_leg_x': +6, 'l_arm_y': -3, 'r_arm_y': -1},
+        {'body_lean':  8, 'body_y': -2, 'l_leg_x': -6, 'r_leg_x': +8, 'l_arm_y': -4, 'r_arm_y':  0},
+        {'body_lean':  6, 'body_y': -1, 'l_leg_x': -4, 'r_leg_x': +6, 'l_arm_y': -3, 'r_arm_y': -1},
+        {'body_lean':  3, 'body_y':  0, 'l_leg_x': -2, 'r_leg_x': +3},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'dash')
+
+
+def gen_slide() -> None:
+    """8-frame slide: crouch into horizontal glide, then recover."""
+    poses = [
+        {'body_y': 2,  'crouch': 1},
+        {'body_y': 5,  'crouch': 4,  'body_lean': 3},
+        {'body_y': 8,  'crouch': 8,  'body_lean': 6,  'l_leg_x': -4, 'r_leg_x': +4},
+        {'body_y': 10, 'crouch': 10, 'body_lean': 8,  'l_leg_x': -6, 'r_leg_x': +8},
+        {'body_y': 10, 'crouch': 10, 'body_lean': 8,  'l_leg_x': -6, 'r_leg_x': +8},
+        {'body_y': 8,  'crouch': 8,  'body_lean': 6,  'l_leg_x': -4, 'r_leg_x': +6},
+        {'body_y': 5,  'crouch': 4,  'body_lean': 3},
+        {'body_y': 2,  'crouch': 1},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'slide')
+
+
+def gen_hurt() -> None:
+    """6-frame hurt: recoil back, arms fly out, recover."""
+    poses = [
+        {'body_lean': -2, 'l_arm_x': -3, 'r_arm_x': +3},
+        {'body_lean': -5, 'body_y': -1, 'l_arm_x': -6, 'r_arm_x': +6, 'l_arm_y': -3, 'r_arm_y': -3},
+        {'body_lean': -6, 'body_y': -2, 'l_arm_x': -7, 'r_arm_x': +7, 'l_arm_y': -4, 'r_arm_y': -4},
+        {'body_lean': -5, 'body_y': -1, 'l_arm_x': -5, 'r_arm_x': +5, 'l_arm_y': -2, 'r_arm_y': -2},
+        {'body_lean': -3, 'l_arm_x': -3, 'r_arm_x': +3},
+        {'body_lean':  0},
+    ]
+    save_strip([draw_frame(p) for p in poses], 'hurt')
+
+
+def gen_death() -> None:
+    """23-frame death: stagger (4) → kneel (6) → collapse (7) → settle (6)."""
+    stagger = [
+        {'body_lean': -3, 'body_y': -1},
+        {'body_lean': -5, 'body_y': -2, 'l_arm_x': -4, 'r_arm_x': +4},
+        {'body_lean': -4, 'body_y': -1, 'l_arm_x': -3, 'r_arm_x': +3},
+        {'body_lean': -2, 'body_y':  0},
+    ]
+    kneel = [
+        {'body_y':  2, 'crouch': 2,  'l_leg_raise': 2,  'r_leg_raise': 0},
+        {'body_y':  5, 'crouch': 5,  'l_leg_raise': 5,  'r_leg_raise': 2},
+        {'body_y':  8, 'crouch': 8,  'l_leg_raise': 8,  'r_leg_raise': 5},
+        {'body_y': 10, 'crouch': 10, 'l_leg_raise': 10, 'r_leg_raise': 8},
+        {'body_y': 12, 'crouch': 12, 'l_leg_raise': 12, 'r_leg_raise': 10},
+        {'body_y': 14, 'crouch': 14, 'l_leg_raise': 14, 'r_leg_raise': 12},
+    ]
+    collapse = [
+        {'body_y': 16, 'crouch': 16, 'body_lean': 3,  'l_arm_x': -4, 'r_arm_x': +4},
+        {'body_y': 18, 'crouch': 18, 'body_lean': 6,  'l_arm_x': -6, 'r_arm_x': +6},
+        {'body_y': 20, 'crouch': 20, 'body_lean': 9,  'l_arm_x': -7, 'r_arm_x': +7},
+        {'body_y': 22, 'crouch': 22, 'body_lean': 12, 'l_arm_x': -7, 'r_arm_x': +7},
+        {'body_y': 24, 'crouch': 24, 'body_lean': 14, 'l_arm_x': -6, 'r_arm_x': +6},
+        {'body_y': 25, 'crouch': 25, 'body_lean': 15, 'l_arm_x': -5, 'r_arm_x': +5},
+        {'body_y': 26, 'crouch': 26, 'body_lean': 16, 'l_arm_x': -4, 'r_arm_x': +4},
+    ]
+    settle = [
+        {'body_y': 26, 'crouch': 26, 'body_lean': 16, 'l_arm_x': -4, 'r_arm_x': +4},
+        {'body_y': 27, 'crouch': 26, 'body_lean': 16, 'l_arm_x': -4, 'r_arm_x': +3},
+        {'body_y': 27, 'crouch': 26, 'body_lean': 16, 'l_arm_x': -3, 'r_arm_x': +3},
+        {'body_y': 27, 'crouch': 26, 'body_lean': 16, 'l_arm_x': -3, 'r_arm_x': +3},
+        {'body_y': 27, 'crouch': 26, 'body_lean': 16, 'l_arm_x': -3, 'r_arm_x': +3},
+        {'body_y': 27, 'crouch': 26, 'body_lean': 16, 'l_arm_x': -3, 'r_arm_x': +3},
+    ]
+    all_poses = stagger + kneel + collapse + settle
+    assert len(all_poses) == 23
+    save_strip([draw_frame(p) for p in all_poses], 'death')
+
+
 def gen_jump() -> None:
     """6-frame jump: crouch → push → rise → peak tuck → spread → fall entry."""
     poses = [
@@ -246,6 +324,10 @@ def main():
     gen_idle()
     gen_walk()
     gen_run()
+    gen_dash()
+    gen_slide()
+    gen_hurt()
+    gen_death()
     gen_jump()
     gen_fall()
     gen_fall_loop()
