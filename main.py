@@ -103,7 +103,7 @@ from PySide6.QtWidgets import QApplication
 from core.activity_tracker import start_tracking, stop_tracking
 from core.backup import create_backup
 from core.database import init_db
-from core.game_logic import get_character
+from core.game_logic import check_daily_login_bonus, get_character
 from core.hotkey_manager import setup_hotkey, teardown_hotkey
 from core.quest_system import (
     expire_old_daily_quests,
@@ -248,6 +248,16 @@ class ChronicForgeApp:
         event_bus.roast_ready.emit(
             f"Welcome back, {name}. Lv{level} {cls}. Streak: {streak}d."
         )
+
+        # ── Daily login bonus ─────────────────────────────────────────────────
+        _login_bonus = check_daily_login_bonus()
+        if _login_bonus.get("awarded"):
+            event_bus.xp_gained.emit(25)
+            send_notification(
+                "Daily Bonus",
+                f"+25 XP and +{_login_bonus['stat_delta']:.1f} {_login_bonus['stat'].upper()}. Welcome back.",
+            )
+
         QTimer.singleShot(3000, self._worker.fetch_quests)
 
         print(f"\n⚔  ChronicForge  |  {name}  Lv{level} {cls}  |  🔥{streak}d\n")
